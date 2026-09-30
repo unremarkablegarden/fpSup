@@ -152,7 +152,9 @@ GSUP_ROUTINES = ('writer_body', 'take_open', 'take_close', 'writer_post',
                  # assembler and the slots went with the words.
                  'accel_hook', 'rec_start', 'rec_stop', 'mode_hook',
                  # REC on the body with HDMI RAW out (HdmiRecStart/Stop).
-                 'hdmi_start', 'hdmi_stop')
+                 'hdmi_start', 'hdmi_stop',
+                 # REC while HDMI record output is on (FUN_c04a6720).
+                 'toggle_start', 'toggle_stop')
 
 
 def patch_offsets(code, syms):

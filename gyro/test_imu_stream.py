@@ -512,7 +512,7 @@ class Editions(unittest.TestCase):
         the cave held a pointer to each; a direct `bl` replaced both."""
         self.assertEqual(self.R.GSUP_ROUTINES[12:],
                          ('accel_hook', 'rec_start', 'rec_stop', 'mode_hook',
-                          'hdmi_start', 'hdmi_stop'))
+                          'hdmi_start', 'hdmi_stop', 'toggle_start', 'toggle_stop'))
         code = self.R.patch_offsets(
             assemble(HERE / 'gcsv_task.S', ()), self.gcsv)
         got = struct.unpack_from('<4I', code, 12 * 4)
@@ -548,7 +548,7 @@ class Editions(unittest.TestCase):
         # One call per hook, and each one allocates, writes the veneer and arms
         # the site in that order -- so "before" is now a property of s_hook, not
         # of where two blocks sit in gsup_boot.
-        self.assertEqual(code.count('bl      s_hook'), 6)
+        self.assertEqual(code.count('bl      s_hook'), 8)
         core_all = (HERE / 'writer_core.inc.S').read_text()
         hook = core_all[core_all.index('\ns_hook:'):]
         hook = hook[:hook.index('\n9:')]

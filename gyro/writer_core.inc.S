@@ -68,6 +68,8 @@ gsup_offsets:
     .word   0       @ +0x3C  mode_hook (that edition only)
     .word   0       @ +0x40  hdmi_start
     .word   0       @ +0x44  hdmi_stop
+    .word   0       @ +0x48  toggle_start
+    .word   0       @ +0x4C  toggle_stop
 
 /* Shared state, reached through the pool pointer rather than pc-relatively.
  *
@@ -1271,6 +1273,11 @@ gsup_boot:
     movw    r1, #:lower16:ACCEL_SITE
     movt    r1, #:upper16:ACCEL_SITE
     bl      s_hook
+    /* One log per take.  Internal takes: rec_start / rec_stop.  HDMI takes:
+     * hdmi_start / hdmi_stop for the first REC of a session (HdmiRecStart
+     * switches record output on), toggle_start / toggle_stop for every REC
+     * after that.  A start does nothing while a log is running.  A log that
+     * is never closed has no directory entry and is lost at power-off. */
     ldr     r0, [r5, #52]               @ rec_start
     movw    r1, #:lower16:START_SITE
     movt    r1, #:upper16:START_SITE
@@ -1287,6 +1294,14 @@ gsup_boot:
     movw    r1, #:lower16:HSTOP_SITE
     movt    r1, #:upper16:HSTOP_SITE
     bl      s_hook
+    ldr     r0, [r5, #72]               @ toggle_start
+    movw    r1, #:lower16:TSTART_SITE
+    movt    r1, #:upper16:TSTART_SITE
+    bl      s_hook
+    ldr     r0, [r5, #76]               @ toggle_stop
+    movw    r1, #:lower16:TSTOP_SITE
+    movt    r1, #:upper16:TSTOP_SITE
+    bl      s_hook
 #ifdef WANT_MODE_HOOK
     ldr     r0, [r5, #60]               @ mode_hook
     movw    r1, #:lower16:MODE_SITE
@@ -1298,17 +1313,6 @@ gsup_boot:
     movt    ip, #:upper16:F_CACHE
     blx     ip
 
-    /* Booted with the recorder attached: HDMI record output is already on, so
-     * HdmiRecStart ran before its hook existed, and while the output stays on
-     * REC toggles the recorder with a message instead of calling it again.
-     * Start the HDMI log here, so the session is covered from now on. */
-    movw    r0, #:lower16:HDMI_REC_STATE
-    movt    r0, #:upper16:HDMI_REC_STATE
-    ldr     r0, [r0]
-    cmp     r0, #1
-    bne     1f
-    bl      hdmi_start
-1:
 
 #ifdef WANT_MODE_HOOK
     /* And the mode we were loaded INTO.  The hook fires when the mode is set,
@@ -1494,6 +1498,12 @@ g_gcount:   .word   0       /* gyro records seen -- the rate ruler            */
 #define REC_STOP 1
 #include "rec_trigger.S"
 #undef REC_STOP
+#define REC_TOGGLE 1
+#include "rec_trigger.S"
+#define REC_STOP 1
+#include "rec_trigger.S"
+#undef REC_STOP
+#undef REC_TOGGLE
 #undef REC_HDMI
 #ifdef WANT_MODE_HOOK
 #include "mode_hook.S"

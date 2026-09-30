@@ -72,6 +72,10 @@ PRODUCERS = {
     # `mov r0, #n` before FUN_c0017140(n).
     'hstart': ('rec_trigger.S', ('REC_HDMI',), 0xC0517D48, 0xE3A00001, 0),
     'hstop':  ('rec_trigger.S', ('REC_HDMI', 'REC_STOP'), 0xC0517D98, 0xE3A00000, 0),
+    # REC while HDMI record output is on: the `mov r0, r5` before the
+    # recorder's start / stop call in FUN_c04a6720.
+    'tstart': ('rec_trigger.S', ('REC_HDMI', 'REC_TOGGLE'), 0xC04A67F0, 0xE1A00005, 0),
+    'tstop':  ('rec_trigger.S', ('REC_HDMI', 'REC_TOGGLE', 'REC_STOP'), 0xC04A6794, 0xE1A00005, 0),
     # The STILL/CINE mode being set.  Not part of the stream at all: it decides
     # which way up a take's frames say they are, which has to happen long
     # before the take.  Base does not arm it -- see mode_hook.S.
@@ -329,7 +333,8 @@ def arm(only=None):
     _code, at = R.place()               # assembles and resolves; writes nothing
     BODY = {'accel': 'accel_hook', 'start': 'rec_start',
             'stop': 'rec_stop', 'mode': 'mode_hook',
-            'hstart': 'hdmi_start', 'hstop': 'hdmi_stop'}
+            'hstart': 'hdmi_start', 'hstop': 'hdmi_stop',
+            'tstart': 'toggle_start', 'tstop': 'toggle_stop'}
     for name in PRODUCERS:
         if only and name not in only:
             continue

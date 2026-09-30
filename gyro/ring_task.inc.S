@@ -283,6 +283,12 @@
  * push lr in their first instruction, so a bl there costs nothing. */
 .equ HSTART_SITE,    0xC0517D48
 .equ HSTOP_SITE,     0xC0517D98
+/* REC while HDMI record output is already on (every press after the first of
+ * a session): FUN_c04a6720 asks the recorder object FUN_c0371130() == 3
+ * (recording) and calls FUN_c03710d0 (stop) or FUN_c0371098(obj, 3) (start).
+ * Each site is the `mov r0, r5` before that call. */
+.equ TSTART_SITE,    0xC04A67F0
+.equ TSTOP_SITE,     0xC04A6794
 /* HDMI record output state, 1 = on: FUN_c00178d8() + 0x18 + 0x204, the word
  * FUN_c0017140 sets (1 from HdmiRecStart, 0 from HdmiRecStop). */
 .equ HDMI_REC_STATE, 0xC3033A50

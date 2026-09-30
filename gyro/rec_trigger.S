@@ -66,7 +66,17 @@
  * a measurement.
  */
 
-#if defined(REC_HDMI) && defined(REC_STOP)
+#if defined(REC_TOGGLE) && defined(REC_STOP)
+.equ SITE,        0xC04A6794
+.equ SITE_ORIG,   0xE1A00005          /* mov r0, r5 */
+#define COUNT_WORD  g_r1_n
+#define LATCH_WORD  g_r1_gc
+#elif defined(REC_TOGGLE)
+.equ SITE,        0xC04A67F0
+.equ SITE_ORIG,   0xE1A00005          /* mov r0, r5 */
+#define COUNT_WORD  g_r0_n
+#define LATCH_WORD  g_r0_gc
+#elif defined(REC_HDMI) && defined(REC_STOP)
 .equ SITE,        0xC0517D98
 .equ SITE_ORIG,   0xE3A00000          /* mov r0, #0 */
 #define COUNT_WORD  g_r1_n
@@ -92,7 +102,13 @@
  * hooks moved out of the cave and only an eight-byte veneer stays behind, so
  * this file is included twice -- once plain, once with REC_STOP -- and two
  * copies of one label would not assemble. */
-#if defined(REC_HDMI) && defined(REC_STOP)
+#if defined(REC_TOGGLE) && defined(REC_STOP)
+    .global toggle_stop
+toggle_stop:
+#elif defined(REC_TOGGLE)
+    .global toggle_start
+toggle_start:
+#elif defined(REC_HDMI) && defined(REC_STOP)
     .global hdmi_stop
 hdmi_stop:
 #elif defined(REC_HDMI)
@@ -107,9 +123,9 @@ rec_start:
 #endif
     push    {r0, r1, r2, r3, ip, lr}
 
-#if defined(REC_HDMI) && !defined(REC_STOP)
-    /* gsup_boot may already have started the log for a session the camera
-     * booted into; a second start would open a second take over it. */
+#ifndef REC_STOP
+    /* gsup_boot has usually started the session log already; a second start
+     * would open a second take over it. */
     SHAREDAT    r0, O_T_WANT
     ldr     r0, [r0]
     cmp     r0, #0
@@ -203,7 +219,10 @@ rec_start:
     blxne   ip
 
 8:  pop     {r0, r1, r2, r3, ip, lr}
-#if defined(REC_HDMI) && defined(REC_STOP)
+#if defined(REC_TOGGLE)
+    mov     r0, r5                      @ the displaced instruction; r5 is the
+                                        @ recorder object FUN_c04a6720 holds
+#elif defined(REC_HDMI) && defined(REC_STOP)
     mov     r0, #0                      @ the displaced instruction
 #elif defined(REC_HDMI)
     mov     r0, #1                      @ the displaced instruction
