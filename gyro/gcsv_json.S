@@ -45,6 +45,8 @@
 .equ F_LENS_INFO,    0xC03341C8     /* -> the lens singleton, no bus traffic  */
 .equ O_LENS_NAME,    0x24           /* blank padded, not NUL terminated       */
 .equ O_LENS_FOCAL,   0x68           /* tenths of a millimetre                 */
+.equ LIVE_TC,        0xC31CC3F8     /* running timecode: bytes hh, mm, ss, ff
+                                     * (binary); XC_TimecodeClass state      */
 .equ LIVE_FOCAL,     0xC30339A8     /* captureState+0x15C: current focal length,
                                      * tenths of a mm; follows the zoom ring
                                      * (280..700 on the 28-70, 2026-09-30)    */
@@ -79,6 +81,18 @@ ji: push    {r1, lr}
     bl      put_u32
     mov     r9, r0
     pop     {r1, lr}
+    bx      lr
+
+/* j2 -- r0 = 0..99, emitted as two digits. */
+j2: mov     r1, #0
+1:  cmp     r0, #10
+    subhs   r0, r0, #10
+    addhs   r1, r1, #1
+    bhs     1b
+    add     r1, r1, #'0'
+    strb    r1, [r9], #1
+    add     r0, r0, #'0'
+    strb    r0, [r9], #1
     bx      lr
 
 /* jm -- r0 = thousandths, emitted as "<whole>.<three digits>". */
@@ -678,6 +692,26 @@ gcsv_json_write:
     S "    \"distortion_coeffs\": ["
     bl      j_dist_emit
     S "]\n  },\n"
+
+    /* The camera's timecode when the log opened, so a reader can place a
+     * clip in the log by its timecode.  Read here rather than at the open:
+     * the profile is written straight after, well inside one frame. */
+    S "  \"timecode\": \""
+    movw    ip, #:lower16:LIVE_TC
+    movt    ip, #:upper16:LIVE_TC
+    ldr     r10, [ip]
+    and     r0, r10, #0xFF
+    bl      j2
+    S ":"
+    ubfx    r0, r10, #8, #8
+    bl      j2
+    S ":"
+    ubfx    r0, r10, #16, #8
+    bl      j2
+    S ":"
+    lsr     r0, r10, #24
+    bl      j2
+    S "\",\n"
     S "  \"sync_settings\": {},\n  \"official\": false\n}\n"
 
     sub     r6, r9, r4                  @ how much there is

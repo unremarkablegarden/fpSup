@@ -45,12 +45,13 @@
                                      * = HDMI rec output, +0x18+0x220 = capture
                                      * state (GetCamStatus)                   */
 .equ TR0_WORDS, 500                 /* 0x7D0 bytes                            */
-.equ TR1_BASE, 0xC3464980           /* lens data (FUN_c03341c8 singleton)     */
+.equ TR1_BASE, 0xC31CC300           /* timecode state, used by the
+                                     * XC_TimecodeClass code (0xC00CE300..) */
 .equ TR1_WORDS, 128
-.equ TR2_BASE, 0xC307CD80           /* lens calibration block; DIST_FOCAL at
-                                     * 0xC307CDF0, support axis at 0xC307CE2C */
+.equ TR2_BASE, 0xC3074900           /* timecode code's other words, 0xC3074954
+                                     * and 0xC30749A0                         */
 .equ TR2_WORDS, 128
-.equ TR3_BASE, 0xC3464B80           /* lens data, continued                   */
+.equ TR3_BASE, 0xC31CC500           /* timecode state, continued              */
 .equ TR3_WORDS, 128
 
 .macro TRACE_REGION base, words, region

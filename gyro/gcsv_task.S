@@ -147,16 +147,10 @@ writer_openfile:
     bne     7f
 #endif
 
-    /* Rung 1: \fpSupGYRO on the same volume -- an SSD take's log belongs with
-     * the SSD's footage, not on whatever card happens to be in the slot. */
+    /* Rung 1: the same volume -- an SSD take's log belongs with the SSD's
+     * footage, not on whatever card happens to be in the slot. */
     mov     r0, #1
-    SHAREDAT    ip, O_G_FALLBACK
-    str     r0, [ip]
-    mov     r0, #LOG_EXT
-    bl      clip_path
-    mov     r6, r0
-    mov     r1, r5
-    bl      try_open
+    bl      try_rung
     SHAREDAT    ip, O_D_OPEN2
     str     r0, [ip]
     cmp     r0, #0
@@ -165,15 +159,9 @@ writer_openfile:
     /* Rung 2: \fpSupGYRO on the SD card.  Nothing of the take is written to a
      * camera volume when an HDMI recorder has it, and this is the rung that
      * still gives the log somewhere to go. */
-    mov     r0, #2
-    SHAREDAT    ip, O_G_FALLBACK
-    str     r0, [ip]
     mov     r5, #VOL_SD
-    mov     r0, #LOG_EXT
-    bl      clip_path
-    mov     r6, r0
-    mov     r1, r5
-    bl      try_open
+    mov     r0, #2
+    bl      try_rung
     SHAREDAT    ip, O_D_OPEN3
     str     r0, [ip]
 
@@ -247,6 +235,33 @@ try_open_mode:
     bx      lr
 
 
+/* try_rung -- r0 = the rung (G_FALLBACK), r4 = the file object, r5 = the
+ * volume.  Opens the log in \gyro_data\ on that volume, else in its root;
+ * G_DIR is left saying which, so the .json goes to the same place.  Returns
+ * the open result; r6 = the path last tried.
+ *
+ * The camera does not make the folder (see clip_path); the user does.  A
+ * volume without one gets the root, as before. */
+try_rung:
+    push    {r7, lr}
+    SHAREDAT    ip, O_G_FALLBACK
+    str     r0, [ip]
+    mov     r7, #1
+1:  SHAREDAT    ip, O_G_DIR
+    str     r7, [ip]
+    mov     r0, #LOG_EXT
+    bl      clip_path
+    mov     r6, r0
+    mov     r1, r5
+    bl      try_open
+    cmp     r0, #0
+    bne     9f
+    subs    r7, r7, #1
+    bpl     1b                          @ the folder failed: the root
+9:  pop     {r7, lr}
+    bx      lr
+
+
 /* hdmi_open -- open the log for a take started by HdmiRecStart.  r4 = the
  * file object, r5 = the volume; returns the open result in r0.
  *
@@ -255,19 +270,36 @@ try_open_mode:
  * H<reel>_<n> instead of A<reel>_<n>, so it never collides with an internal
  * clip, and it is opened with F_MODE_NEW, which fails when the file exists;
  * <n> goes up by one until the open succeeds.  Up to HDMI_TRIES names; after
- * that the take gets no log rather than overwriting an earlier one. */
+ * that the take gets no log rather than overwriting an earlier one.
+ *
+ * \gyro_data\ first.  If every name fails there, the folder is taken to be
+ * missing: G_HDIR = 2 sends this and every later HDMI log of the boot to the
+ * root, so a card without the folder pays the failed opens once, not on every
+ * split.  <n> starts again from take_path's value for the root. */
 .equ F_MODE_NEW,  0x402
 .equ HDMI_TRIES,  50
 hdmi_open:
-    push    {r6, r8, r10, lr}
+    push    {r6, r7, r8, r9, r10, lr}
     mov     r0, #G_OFF_CLIP
     bl      blob_at
     mov     r8, r0                      @ take_path's eight characters
     mov     r0, #'H'
     strb    r0, [r8]
-    mov     r0, #1                      @ rung 1: the root of the volume
+    ldrb    r9, [r8, #5]                @ <n>, kept for a second pass
+    ldrb    r0, [r8, #6]
+    orr     r9, r9, r0, lsl #8
+    ldrb    r0, [r8, #7]
+    orr     r9, r9, r0, lsl #16
+    mov     r0, #1                      @ rung 1: the SD card
     SHAREDAT    ip, O_G_FALLBACK
     str     r0, [ip]
+    SHAREDAT    ip, O_G_HDIR
+    ldr     r7, [ip]
+    cmp     r7, #2
+    moveq   r7, #0                      @ no folder this boot: the root
+    movne   r7, #1
+3:  SHAREDAT    ip, O_G_DIR
+    str     r7, [ip]
     mov     r10, #HDMI_TRIES
 1:  mov     r0, #LOG_EXT
     bl      clip_path
@@ -281,10 +313,28 @@ hdmi_open:
     bl      bump_dec3
     subs    r10, r10, #1
     bne     1b
-    mov     r0, #0
-2:  SHAREDAT    ip, O_D_OPEN2
+    cmp     r7, #0
+    beq     4f                          @ the root failed too
+    mov     r7, #0
+    SHAREDAT    ip, O_G_HDIR
+    mov     r0, #2
     str     r0, [ip]
-    pop     {r6, r8, r10, lr}
+    strb    r9, [r8, #5]
+    lsr     r0, r9, #8
+    strb    r0, [r8, #6]
+    lsr     r0, r9, #16
+    strb    r0, [r8, #7]
+    b       3b
+2:  cmp     r7, #0
+    beq     5f
+    SHAREDAT    ip, O_G_HDIR
+    mov     r1, #1
+    str     r1, [ip]
+    b       5f
+4:  mov     r0, #0
+5:  SHAREDAT    ip, O_D_OPEN2
+    str     r0, [ip]
+    pop     {r6, r7, r8, r9, r10, lr}
     bx      lr
 
 /* bump_dec3 -- add one to the three ASCII digits at r0.  999 wraps to 000. */
@@ -344,13 +394,40 @@ clip_path:
     bl      blob_at
     mov     r6, r0
 
-    /* The fallback is the root of the volume: one character, no folder to
-     * make, and no second copy of the name.  Making a directory at record
-     * start is what froze the camera on every SSD take. */
+    /* The fallback is the root of the volume, or \gyro_data\ in it when G_DIR
+     * is set (try_rung, hdmi_open).  The camera never makes that folder:
+     * making a directory at record start is what froze the camera on every
+     * SSD take.  The user makes it; without it the open fails and the root is
+     * tried next. */
     SHAREDAT    r8, O_G_FALLBACK
     ldr     r8, [r8]
     cmp     r8, #0
     beq     0f
+    mov     r0, #'\\'
+    strb    r0, [r6], #1
+    SHAREDAT    r0, O_G_DIR
+    ldr     r0, [r0]
+    cmp     r0, #0
+    beq     1f
+    /* \gyro_data\, byte by byte: r6 has no alignment to rely on. */
+    mov     r0, #'g'
+    strb    r0, [r6], #1
+    mov     r0, #'y'
+    strb    r0, [r6], #1
+    mov     r0, #'r'
+    strb    r0, [r6], #1
+    mov     r0, #'o'
+    strb    r0, [r6], #1
+    mov     r0, #'_'
+    strb    r0, [r6], #1
+    mov     r0, #'d'
+    strb    r0, [r6], #1
+    mov     r0, #'a'
+    strb    r0, [r6], #1
+    mov     r0, #'t'
+    strb    r0, [r6], #1
+    mov     r0, #'a'
+    strb    r0, [r6], #1
     mov     r0, #'\\'
     strb    r0, [r6], #1
     b       1f

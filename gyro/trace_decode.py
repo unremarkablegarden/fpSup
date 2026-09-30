@@ -38,9 +38,9 @@ MARKS = {
 # Same table as trace_diff.S.
 REGIONS = {
     0: (0xC3033834, 'state'),       # FUN_c00178d8(); +0x18 = captureState base
-    1: (0xC3464980, 'lens'),        # lens data, FUN_c03341c8
-    2: (0xC307CD80, 'lenscal'),     # calibration block, DIST_FOCAL at +0x70
-    3: (0xC3464B80, 'lens2'),       # lens data, continued
+    1: (0xC31CC300, 'tc'),          # timecode state (XC_TimecodeClass code)
+    2: (0xC3074900, 'tc2'),         # the timecode code's other words
+    3: (0xC31CC500, 'tc3'),         # timecode state, continued
 }
 
 

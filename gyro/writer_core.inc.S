@@ -172,6 +172,9 @@ g_t_want:     .word   0     /* 1 = a take wants the file */
 g_t_build:    .word   0     /* how far take_open may build */
 g_t_teardown: .word   0     /* how far take_close may tear down */
 g_t_hdmi:     .word   0     /* 1 = the take started from HdmiRecStart */
+g_g_dir:      .word   0     /* 1 = clip_path's root rungs go into \gyro_data\ */
+g_g_hdir:     .word   0     /* HDMI logs: 0 not tried, 1 \gyro_data\ opened,
+                             * 2 it did not (root until the next boot) */
 
 .equ O_T_BYTES,  g_t_bytes  - gsup_offsets
 .equ O_T_WRITES, g_t_writes - gsup_offsets
@@ -223,6 +226,8 @@ g_t_hdmi:     .word   0     /* 1 = the take started from HdmiRecStart */
 .equ O_W_CLOSES, g_w_closes - gsup_offsets
 .equ O_W_STAGE, g_w_stage - gsup_offsets
 .equ O_T_HDMI, g_t_hdmi - gsup_offsets
+.equ O_G_DIR, g_g_dir - gsup_offsets
+.equ O_G_HDIR, g_g_hdir - gsup_offsets
 .equ O_T_POS, g_t_pos - gsup_offsets
 .equ O_T_SEEKS, g_t_seeks - gsup_offsets
 .equ O_W_VT, g_w_vt - gsup_offsets

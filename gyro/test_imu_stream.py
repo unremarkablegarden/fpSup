@@ -604,8 +604,12 @@ class Editions(unittest.TestCase):
         openf = code[code.index('\nwriter_openfile:'):code.index('\nclip_path:')]
         for w in ('D_OPEN1', 'D_OPEN2', 'D_OPEN3', 'D_VOL', 'G_FALLBACK'):
             self.assertIn(w, openf, f'the open never records {w}')
-        # \b: hdmi_open's try_open_mode is not a rung
-        self.assertEqual(len(re.findall(r'bl\s+try_open\b', openf)), 3, 'not three rungs')
+        # rung 0 opens beside the clip; rungs 1 and 2 go through try_rung,
+        # which tries \gyro_data\ and then the root.  \b: hdmi_open's
+        # try_open_mode is not a rung.
+        rung0 = openf[:openf.index('\ntry_rung:')]
+        self.assertEqual(len(re.findall(r'bl\s+try_open\b', rung0)), 1, 'no rung 0')
+        self.assertEqual(len(re.findall(r'bl\s+try_rung\b', openf)), 2, 'not three rungs')
         # the middle rung keeps the recording volume; only the last drops to SD
         self.assertEqual(openf.count('VOL_SD'), 1,
                          'more than one rung goes to the SD card')
