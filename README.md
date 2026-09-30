@@ -31,7 +31,7 @@ Make the `gyro_data` folder in the root of the SD card, and of any USB SSD you r
 - The first log starts when the recorder connects (or at boot, if it is attached); the last ends when the camera is switched off.
 - The Ninja's REC button does not reach the camera. A take started there has no log of its own and lies inside whichever log is open; gyroflow-batch-resolve can still find it there.
 - The `.json` carries the camera's timecode (`"timecode": "HH:MM:SS:FF"`) and the focal length the camera shows when the log opens, so each take has its own zoom position. With timecode on Free Run, gyroflow-batch-resolve places each clip in its log by timecode, to a frame. Zooming during a take is not followed, and the distortion coefficients are the lens's calibration ones at every zoom position.
-- The log opened at connect may still describe the HDMI monitor mode (3856×2170 @59.94); take logs carry the recording mode (e.g. 3840×2160 @24). gyroflow-batch-resolve sets size and frame rate from the clip either way. The rolling-shutter readout (6.16 ms) is not verified for HDMI RAW.
+- Take logs describe the recording mode (e.g. 3840×2160 @24). A log opened before the recorder is ready (at connect, or on a press it ignored) holds no clip and describes the HDMI monitor mode (3856×2170 @59.94). gyroflow-batch-resolve sets size and frame rate from the clip either way. The rolling-shutter readout (6.16 ms) is not verified for HDMI RAW.
 - A take log is up to about 80 ms (2 frames at 24p) shorter than its clip.
 
 ## What is different from upstream

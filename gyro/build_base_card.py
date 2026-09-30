@@ -93,9 +93,13 @@ RECORD
     The .json carries the camera's timecode and the focal length it shows
     when the log opens, so each take has its own zoom position.  Zooming
     during a take is not followed.  Set timecode to Free Run and
-    gyroflow-batch-resolve places each clip in its log by timecode.  The log opened at connect may still describe the HDMI monitor
-    mode (3856x2170 @59.94); set size and frame rate to the clip's before
-    use.  gyroflow-batch-resolve does this for you.
+    gyroflow-batch-resolve places each clip in its log by timecode.
+
+    Take logs describe the recording mode (e.g. 3840x2160 @24).  A log
+    opened before the recorder is ready (at connect, or on a press it
+    ignored) holds no clip and describes the HDMI monitor mode
+    (3856x2170 @59.94).  gyroflow-batch-resolve sets size and frame rate
+    from the clip either way.
 
 CONVERT
     https://ijigen.github.io/fpSup/gyro/convert/     one take, in a browser
