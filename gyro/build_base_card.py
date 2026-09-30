@@ -66,14 +66,15 @@ READMES = {}
 READMES['base'] = """fpGyroSup Base + HDMI {version} -- SIGMA fp firmware Ver.5.02 only
 
 INSTALL
-    Copy AutoRun.txt, fpSup.BIN and the FPSUPUI folder to the root of the SD
-    card the camera boots from.  Boot with the USB cable unplugged: the fpSup
-    logo appears top left and four boxes fill; all four filled means loaded.
+    Copy AutoRun.txt, fpSup.BIN and the FPSUPUI and gyro_data folders to the
+    root of the SD card the camera boots from.  Boot with the USB cable
+    unplugged: the fpSup logo appears top left and four boxes fill; all four
+    filled means loaded.
 
 FOLDER
-    Make a folder named gyro_data in the root of the SD card (and of a USB
-    SSD you record to), once.  Logs go into it.  The camera does not create
-    it: on a disk without it, logs go to the root as before.
+    Logs go into gyro_data.  The camera does not create it: copy it with the
+    card files, and make one in the root of any USB SSD you record to.  On a
+    disk without it, logs go to the root.
 
 RECORD
     Internal CinemaDNG     \\gyro_data\\A001_037.GYR + .json
@@ -423,6 +424,11 @@ def main():
         print(f'  {where:>16s}  {len(blob):5d}  {why}')
     (out / 'README.txt').write_text(
         READMES[a.edition].format(version=a.version))
+    # The log folder, shipped with the card because the camera never creates
+    # it.  git keeps no empty folder, so it carries one small file.
+    (out / 'gyro_data').mkdir(exist_ok=True)
+    (out / 'gyro_data' / 'README.txt').write_text(
+        'fpSup gyro logs (.GYR + .json) are written to this folder.\n')
     vshl = out / 'fpSup.BIN'
     autorun = out / 'AutoRun.txt'
     print(f'\n  {autorun}  {len(autorun.read_text().splitlines())} commands')

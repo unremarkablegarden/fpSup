@@ -1,14 +1,15 @@
 fpGyroSup Base + HDMI v1.14.0-hdmi4 -- SIGMA fp firmware Ver.5.02 only
 
 INSTALL
-    Copy AutoRun.txt, fpSup.BIN and the FPSUPUI folder to the root of the SD
-    card the camera boots from.  Boot with the USB cable unplugged: the fpSup
-    logo appears top left and four boxes fill; all four filled means loaded.
+    Copy AutoRun.txt, fpSup.BIN and the FPSUPUI and gyro_data folders to the
+    root of the SD card the camera boots from.  Boot with the USB cable
+    unplugged: the fpSup logo appears top left and four boxes fill; all four
+    filled means loaded.
 
 FOLDER
-    Make a folder named gyro_data in the root of the SD card (and of a USB
-    SSD you record to), once.  Logs go into it.  The camera does not create
-    it: on a disk without it, logs go to the root as before.
+    Logs go into gyro_data.  The camera does not create it: copy it with the
+    card files, and make one in the root of any USB SSD you record to.  On a
+    disk without it, logs go to the root.
 
 RECORD
     Internal CinemaDNG     \gyro_data\A001_037.GYR + .json
