@@ -45,6 +45,9 @@
 .equ F_LENS_INFO,    0xC03341C8     /* -> the lens singleton, no bus traffic  */
 .equ O_LENS_NAME,    0x24           /* blank padded, not NUL terminated       */
 .equ O_LENS_FOCAL,   0x68           /* tenths of a millimetre                 */
+.equ LIVE_FOCAL,     0xC30339A8     /* captureState+0x15C: current focal length,
+                                     * tenths of a mm; follows the zoom ring
+                                     * (280..700 on the 28-70, 2026-09-30)    */
 .equ LENS_NAME_MAX,  32
 .equ SENSOR_HZ_MHZ,  72
 .equ SENSOR_ACTIVE_W, 6000
@@ -543,12 +546,32 @@ gcsv_json_write:
 
     mov     r0, r11
     bl      j_lens
+    mov     r8, r0                      @ the mount's focal length, tenths of a mm
+
+    /* A zoom: the lens singleton and the calibration block keep one focal
+     * length (28.9 on the 28-70 at every zoom position); the current one is
+     * LIVE_FOCAL, the value the camera displays.  When it differs from the
+     * mount's, the lens has been zoomed and it is used as it stands. */
+    movw    ip, #:lower16:LIVE_FOCAL
+    movt    ip, #:upper16:LIVE_FOCAL
+    ldr     r1, [ip]
+    cmp     r1, #10                     @ nothing shorter than a millimetre
+    blo     1f
+    movw    ip, #20000                  @ nor longer than two metres
+    cmp     r1, ip
+    bhi     1f
+    cmp     r1, r8
+    movne   r8, r1
+    bne     2f
+
     /* The focal the correction data was measured at, not the one on the
      * barrel: a SIGMA 40mm Art says 40.0 and calibrates at 39.4, and the
      * camera matrix wants the second -- it is the scale that turns a gyro
      * angle into pixels, so an error there over-corrects every rotation. */
+1:  mov     r0, r8
     bl      pg_dist_focal
     mov     r8, r0                      @ the focal length, tenths of a mm
+2:
 
     S "{\n  \"name\": \"SIGMA fp - "
     mov     r0, r11

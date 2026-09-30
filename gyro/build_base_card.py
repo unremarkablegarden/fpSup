@@ -76,16 +76,20 @@ RECORD
     External recorder      \\H001_001.GYR + \\H001_001.json
     (HDMI RAW, e.g. Ninja) in the root of the SD card
 
-    An external log covers the whole HDMI session, not one take: it starts
-    at boot when the recorder is already attached, otherwise at the first
-    REC press on the fp, and runs until HDMI record output ends or the
-    camera is switched off.  Every clip recorded meanwhile is in it, from
-    either REC button; gyroflow-batch-resolve finds each clip inside it.
+    With HDMI record output on, every REC press and every full shutter
+    press on the fp closes the open log and opens the next.  Each take gets
+    its own log and its own .json; the logs between takes hold no clip.
+    The first log starts when the recorder connects (or at boot, if it is
+    attached), the last ends when the camera is switched off.  REC on the
+    recorder itself does not reach the camera: a take started there has no
+    log of its own and lies inside whichever log is open.
     H numbers count up and never overwrite an earlier file.
 
-    The .json of an external take describes the camera's HDMI monitor mode
-    (3856x2170 @59.94), not the recorded clip; set its size and frame rate
-    to the clip's before use.  gyroflow-batch-resolve does this for you.
+    The .json carries the focal length the camera shows when the log opens,
+    so each take has its own zoom position.  Zooming during a take is not
+    followed.  The log opened at connect may still describe the HDMI monitor
+    mode (3856x2170 @59.94); set size and frame rate to the clip's before
+    use.  gyroflow-batch-resolve does this for you.
 
 CONVERT
     https://ijigen.github.io/fpSup/gyro/convert/     one take, in a browser
@@ -152,8 +156,16 @@ the card, or pull the battery, and the camera is exactly as it was.
 EDITIONS = {
     'base': ('gcsv_task.S', ('FPGYRO_EDITION_BASE=1',)),
     'gcsv': ('gcsv_task.S', ()),
+    # Diagnostic: Base plus trace_diff.S.  Not a release edition.
+    'trace': ('gcsv_task.S', ('FPGYRO_EDITION_BASE=1', 'TRACE_DIFF=1')),
 }
-BANNER = {'base': 'Base', 'gcsv': 'Gyro'}
+BANNER = {'base': 'Base', 'gcsv': 'Gyro', 'trace': 'Trace'}
+READMES['trace'] = """fpGyroSup Trace {version} -- SIGMA fp firmware Ver.5.02 only
+
+Diagnostic card: Base + HDMI, plus a RAM trace (tag 0x10) and marker records
+(tags 0x11, 0x12) in the .GYR.  Decode with gyro/trace_decode.py.  Not for
+shooting.
+"""
 
 
 def sections(edition='base'):
@@ -219,7 +231,21 @@ def launch(edition):
     return boot + code, len(code)
 
 
-def hook_sites():
+# trace_diff.S's marker sites and the firmware word at each, for the trace
+# edition only.  Same journalling as PRODUCERS.
+TRACE_SITES = {
+    'mark0': (0xC04A6724, 0xE24DD014),   # sub sp, sp, #0x14
+    'mark1': (0xC04A6A2C, 0xE5904204),   # ldr r4, [r0, #0x204]
+    'mark2': (0xC037218C, 0xE24DD0BC),   # sub sp, sp, #0xbc
+    'mark3': (0xC037237C, 0xE24DD0BC),
+    'mark4': (0xC03723CC, 0xE24DD0BC),
+    'mark5': (0xC0372414, 0xE1A04000),   # mov r4, r0
+    'mark6': (0xC02DBBEC, 0xE24DD004),   # sub sp, sp, #4
+    'mark7': (0xC0017F0C, 0xE24DD008),   # sub sp, sp, #8
+}
+
+
+def hook_sites(edition='base'):
     """Each hook site as a four-byte section holding the firmware's own word.
 
     gsup_boot arms these at run time, which stage2 cannot see.  Declared here,
@@ -230,9 +256,12 @@ def hook_sites():
     (2026-09-25, LOADER_V2.md).  One list: imu_stream_deploy.PRODUCERS."""
     import struct
     import imu_stream_deploy as D
+    sites = {name: (site, orig) for name, (_src, _defs, site, orig, _t)
+             in D.PRODUCERS.items()}
+    if edition == 'trace':
+        sites.update(TRACE_SITES)
     return [(site, struct.pack('<I', orig), f'hook site {name}')
-            for name, (_src, _defs, site, orig, _t) in sorted(D.PRODUCERS.items(),
-                                                              key=lambda kv: kv[1][2])]
+            for name, (site, orig) in sorted(sites.items(), key=lambda kv: kv[1][0])]
 
 
 def check(secs):
@@ -321,7 +350,7 @@ def main():
             raise SystemExit(f'--also-bin wants 0xADDR:FILE, got {spec!r}')
         f = pathlib.Path(path)
         extra.append((int(at, 0), f.read_bytes(), f'extra {f.name}'))
-    secs = secs + hook_sites() + extra
+    secs = secs + hook_sites(a.edition) + extra
     check(secs)
 
     tmp = pathlib.Path(tempfile.mkdtemp())

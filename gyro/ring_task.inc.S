@@ -277,12 +277,14 @@
 .equ ACCEL_SITE,     0xC050D4C8
 .equ START_SITE,     0xC03790B8
 .equ STOP_SITE,      0xC038C484
-/* REC on the body with HDMI RAW out: FUN_c04a6720 calls HdmiRecStart
- * (0xC0517D20) or HdmiRecStop (0xC0517D58) and the internal recorder never
- * runs.  Each site is the `mov r0, #n` before FUN_c0017140(n); both functions
- * push lr in their first instruction, so a bl there costs nothing. */
+/* HDMI record connection start / end: HdmiRecStart (0xC0517D20, called from
+ * the connect handler FUN_c04a6720) and HdmiRecStop (0xC0517D58).  With HDMI
+ * RAW out the internal recorder never runs.  Each site is the `mov r0, #n`
+ * before FUN_c0017140(n); both functions push lr in their first instruction,
+ * so a bl there costs nothing.  KSPLIT_SITE: see key_split.S. */
 .equ HSTART_SITE,    0xC0517D48
 .equ HSTOP_SITE,     0xC0517D98
+.equ KSPLIT_SITE,    0xC02DBC0C
 /* HDMI record output state, 1 = on: FUN_c00178d8() + 0x18 + 0x204, the word
  * FUN_c0017140 sets (1 from HdmiRecStart, 0 from HdmiRecStop). */
 .equ HDMI_REC_STATE, 0xC3033A50

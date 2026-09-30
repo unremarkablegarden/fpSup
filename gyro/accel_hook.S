@@ -106,6 +106,10 @@ accel_hook:
     mov     r0, #1
     bl      stream_commit
 
+#ifdef TRACE_DIFF
+    bl      trace_diff                  @ r4 is kept; see trace_diff.S
+#endif
+
 3:  pop     {r0, r1, r2, r3, ip, lr}
     mov     r2, #0                      @ the displaced instruction
     bx      lr

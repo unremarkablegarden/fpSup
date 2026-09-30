@@ -43,6 +43,7 @@ SHARED = {}
 # ship a zero -- it fails to assemble.  Listing them here only made this check
 # look for table entries that no longer exist.
 BLOB_ROUTINES = ('accel_hook', 'rec_start', 'rec_stop', 'hdmi_start', 'hdmi_stop',
+                 'key_split',
                  'writer_body', 'take_open', 'take_close', 'writer_post',
                  'mpool_init_jobs', 'blocks_open', 'gsup_boot')
 EXPECT = {'base': SHARED, 'gcsv': SHARED}

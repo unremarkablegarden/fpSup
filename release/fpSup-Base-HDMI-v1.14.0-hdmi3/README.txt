@@ -1,4 +1,4 @@
-fpGyroSup Base + HDMI v1.14.0-hdmi2 -- SIGMA fp firmware Ver.5.02 only
+fpGyroSup Base + HDMI v1.14.0-hdmi3 -- SIGMA fp firmware Ver.5.02 only
 
 INSTALL
     Copy AutoRun.txt, fpSup.BIN and the FPSUPUI folder to the root of the SD
@@ -11,16 +11,20 @@ RECORD
     External recorder      \H001_001.GYR + \H001_001.json
     (HDMI RAW, e.g. Ninja) in the root of the SD card
 
-    An external log covers the whole HDMI session, not one take: it starts
-    at boot when the recorder is already attached, otherwise at the first
-    REC press on the fp, and runs until HDMI record output ends or the
-    camera is switched off.  Every clip recorded meanwhile is in it, from
-    either REC button; gyroflow-batch-resolve finds each clip inside it.
+    With HDMI record output on, every REC press and every full shutter
+    press on the fp closes the open log and opens the next.  Each take gets
+    its own log and its own .json; the logs between takes hold no clip.
+    The first log starts when the recorder connects (or at boot, if it is
+    attached), the last ends when the camera is switched off.  REC on the
+    recorder itself does not reach the camera: a take started there has no
+    log of its own and lies inside whichever log is open.
     H numbers count up and never overwrite an earlier file.
 
-    The .json of an external take describes the camera's HDMI monitor mode
-    (3856x2170 @59.94), not the recorded clip; set its size and frame rate
-    to the clip's before use.  gyroflow-batch-resolve does this for you.
+    The .json carries the focal length the camera shows when the log opens,
+    so each take has its own zoom position.  Zooming during a take is not
+    followed.  The log opened at connect may still describe the HDMI monitor
+    mode (3856x2170 @59.94); set size and frame rate to the clip's before
+    use.  gyroflow-batch-resolve does this for you.
 
 CONVERT
     https://ijigen.github.io/fpSup/gyro/convert/     one take, in a browser

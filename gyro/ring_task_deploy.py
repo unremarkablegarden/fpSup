@@ -151,8 +151,10 @@ GSUP_ROUTINES = ('writer_body', 'take_open', 'take_close', 'writer_post',
                  # body share a blob now, so the branch is resolved by the
                  # assembler and the slots went with the words.
                  'accel_hook', 'rec_start', 'rec_stop', 'mode_hook',
-                 # REC on the body with HDMI RAW out (HdmiRecStart/Stop).
-                 'hdmi_start', 'hdmi_stop')
+                 # HDMI record connection start / end (HdmiRecStart/Stop).
+                 'hdmi_start', 'hdmi_stop',
+                 # REC / shutter key-down with HDMI record output on.
+                 'key_split')
 
 
 def patch_offsets(code, syms):

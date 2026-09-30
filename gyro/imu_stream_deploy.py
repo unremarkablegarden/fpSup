@@ -68,10 +68,14 @@ PRODUCERS = {
     # layout; what changed is where they land.  (2026-09-22)
     'start': ('rec_trigger.S', (),            0xC03790B8, 0xE5DB25CE, 0),
     'stop':  ('rec_trigger.S', ('REC_STOP',), 0xC038C484, 0xE3500000, 0),
-    # REC on the body with HDMI RAW out: HdmiRecStart / HdmiRecStop, at the
-    # `mov r0, #n` before FUN_c0017140(n).
+    # HDMI record connection start / end (recorder plugged in, unplugged,
+    # power-off): HdmiRecStart / HdmiRecStop, at the `mov r0, #n` before
+    # FUN_c0017140(n).
     'hstart': ('rec_trigger.S', ('REC_HDMI',), 0xC0517D48, 0xE3A00001, 0),
     'hstop':  ('rec_trigger.S', ('REC_HDMI', 'REC_STOP'), 0xC0517D98, 0xE3A00000, 0),
+    # REC key-down or shutter full press with HDMI record output on: close the
+    # H log and open the next, one per take.  After FUN_c02dbbe8's queue send.
+    'ksplit': ('key_split.S', (), 0xC02DBC0C, 0xE320F000, 0),
     # The STILL/CINE mode being set.  Not part of the stream at all: it decides
     # which way up a take's frames say they are, which has to happen long
     # before the take.  Base does not arm it -- see mode_hook.S.
@@ -329,7 +333,8 @@ def arm(only=None):
     _code, at = R.place()               # assembles and resolves; writes nothing
     BODY = {'accel': 'accel_hook', 'start': 'rec_start',
             'stop': 'rec_stop', 'mode': 'mode_hook',
-            'hstart': 'hdmi_start', 'hstop': 'hdmi_stop'}
+            'hstart': 'hdmi_start', 'hstop': 'hdmi_stop',
+            'ksplit': 'key_split'}
     for name in PRODUCERS:
         if only and name not in only:
             continue

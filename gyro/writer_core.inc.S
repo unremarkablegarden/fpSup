@@ -68,6 +68,7 @@ gsup_offsets:
     .word   0       @ +0x3C  mode_hook (that edition only)
     .word   0       @ +0x40  hdmi_start
     .word   0       @ +0x44  hdmi_stop
+    .word   0       @ +0x48  key_split
 
 /* Shared state, reached through the pool pointer rather than pc-relatively.
  *
@@ -1287,11 +1288,18 @@ gsup_boot:
     movw    r1, #:lower16:HSTOP_SITE
     movt    r1, #:upper16:HSTOP_SITE
     bl      s_hook
+    ldr     r0, [r5, #72]               @ key_split
+    movw    r1, #:lower16:KSPLIT_SITE
+    movt    r1, #:upper16:KSPLIT_SITE
+    bl      s_hook
 #ifdef WANT_MODE_HOOK
     ldr     r0, [r5, #60]               @ mode_hook
     movw    r1, #:lower16:MODE_SITE
     movt    r1, #:upper16:MODE_SITE
     bl      s_hook
+#endif
+#ifdef TRACE_DIFF
+    bl      trace_arm
 #endif
 
     movw    ip, #:lower16:F_CACHE
@@ -1299,9 +1307,9 @@ gsup_boot:
     blx     ip
 
     /* Booted with the recorder attached: HDMI record output is already on, so
-     * HdmiRecStart ran before its hook existed, and while the output stays on
-     * REC toggles the recorder with a message instead of calling it again.
-     * Start the HDMI log here, so the session is covered from now on. */
+     * HdmiRecStart ran before its hook existed and does not run again while
+     * the output stays on.  Start the HDMI log here; key_split takes over
+     * from the first REC or shutter press. */
     movw    r0, #:lower16:HDMI_REC_STATE
     movt    r0, #:upper16:HDMI_REC_STATE
     ldr     r0, [r0]
@@ -1485,6 +1493,9 @@ g_gcount:   .word   0       /* gyro records seen -- the rate ruler            */
  * rec_trigger.S is included twice because the record start and stop hooks are
  * one source with one `#ifdef`; each include defines its own symbol. */
 #include "accel_hook.S"
+#ifdef TRACE_DIFF
+#include "trace_diff.S"
+#endif
 #include "rec_trigger.S"
 #define REC_STOP 1
 #include "rec_trigger.S"
@@ -1495,6 +1506,7 @@ g_gcount:   .word   0       /* gyro records seen -- the rate ruler            */
 #include "rec_trigger.S"
 #undef REC_STOP
 #undef REC_HDMI
+#include "key_split.S"
 #ifdef WANT_MODE_HOOK
 #include "mode_hook.S"
 #endif
