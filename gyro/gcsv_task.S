@@ -124,6 +124,14 @@ writer_openfile:
     str     r0, [ip]
     bl      take_path
 
+    SHAREDAT    ip, O_T_HDMI
+    ldr     ip, [ip]
+    cmp     ip, #0
+    beq     10f
+    bl      hdmi_open
+    b       7f
+10:
+
 #ifndef FPGYRO_EDITION_BASE
     /* Rung 0: beside the clip, on the volume being recorded to.  Base skips it:
      * its log goes to the root, so there is nothing to try first. */
@@ -212,14 +220,17 @@ writer_openfile:
  * rung can construct again.  A file object left constructed after a failed
  * open is the \LENS.DAT trap: every later open fails too. */
 try_open:
-    push    {r7, lr}
+    mov     r3, #F_MODE_AUD
+/* try_open_mode -- the same, with the open mode in r3. */
+try_open_mode:
+    push    {r1, r3, r7, lr}            @ the ctor may clobber r1 and r3
     mov     r0, r4
     movw    ip, #:lower16:F_CTOR
     movt    ip, #:upper16:F_CTOR
     blx     ip
+    ldr     r2, [sp, #4]                @ the mode
     mov     r0, r4
     mov     r1, r6
-    mov     r2, #F_MODE_AUD
     movw    ip, #:lower16:F_OPEN
     movt    ip, #:upper16:F_OPEN
     blx     ip
@@ -232,7 +243,63 @@ try_open:
     movt    ip, #:upper16:F_DTOR
     blx     ip
 1:  mov     r0, r7
-    pop     {r7, lr}
+    pop     {r1, r3, r7, lr}
+    bx      lr
+
+
+/* hdmi_open -- open the log for a take started by HdmiRecStart.  r4 = the
+ * file object, r5 = the volume; returns the open result in r0.
+ *
+ * Nothing is recorded internally, so the camera's clip counter does not move
+ * and take_path returns the same name for every HDMI take.  The name is
+ * H<reel>_<n> instead of A<reel>_<n>, so it never collides with an internal
+ * clip, and it is opened with F_MODE_NEW, which fails when the file exists;
+ * <n> goes up by one until the open succeeds.  Up to HDMI_TRIES names; after
+ * that the take gets no log rather than overwriting an earlier one. */
+.equ F_MODE_NEW,  0x402
+.equ HDMI_TRIES,  50
+hdmi_open:
+    push    {r6, r8, r10, lr}
+    mov     r0, #G_OFF_CLIP
+    bl      blob_at
+    mov     r8, r0                      @ take_path's eight characters
+    mov     r0, #'H'
+    strb    r0, [r8]
+    mov     r0, #1                      @ rung 1: the root of the volume
+    SHAREDAT    ip, O_G_FALLBACK
+    str     r0, [ip]
+    mov     r10, #HDMI_TRIES
+1:  mov     r0, #LOG_EXT
+    bl      clip_path
+    mov     r6, r0
+    mov     r1, r5
+    movw    r3, #F_MODE_NEW
+    bl      try_open_mode
+    cmp     r0, #0
+    bne     2f
+    add     r0, r8, #5
+    bl      bump_dec3
+    subs    r10, r10, #1
+    bne     1b
+    mov     r0, #0
+2:  SHAREDAT    ip, O_D_OPEN2
+    str     r0, [ip]
+    pop     {r6, r8, r10, lr}
+    bx      lr
+
+/* bump_dec3 -- add one to the three ASCII digits at r0.  999 wraps to 000. */
+bump_dec3:
+    add     r0, r0, #2
+    mov     r2, #3
+1:  ldrb    r1, [r0]
+    add     r1, r1, #1
+    cmp     r1, #'9'
+    strbls  r1, [r0]
+    bxls    lr
+    mov     r1, #'0'
+    strb    r1, [r0], #-1
+    subs    r2, r2, #1
+    bne     1b
     bx      lr
 
 

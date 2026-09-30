@@ -150,7 +150,9 @@ GSUP_ROUTINES = ('writer_body', 'take_open', 'take_close', 'writer_post',
                  # slots here while the cave held a pointer to each.  Hook and
                  # body share a blob now, so the branch is resolved by the
                  # assembler and the slots went with the words.
-                 'accel_hook', 'rec_start', 'rec_stop', 'mode_hook')
+                 'accel_hook', 'rec_start', 'rec_stop', 'mode_hook',
+                 # REC on the body with HDMI RAW out (HdmiRecStart/Stop).
+                 'hdmi_start', 'hdmi_stop')
 
 
 def patch_offsets(code, syms):

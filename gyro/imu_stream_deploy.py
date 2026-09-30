@@ -68,6 +68,10 @@ PRODUCERS = {
     # layout; what changed is where they land.  (2026-09-22)
     'start': ('rec_trigger.S', (),            0xC03790B8, 0xE5DB25CE, 0),
     'stop':  ('rec_trigger.S', ('REC_STOP',), 0xC038C484, 0xE3500000, 0),
+    # REC on the body with HDMI RAW out: HdmiRecStart / HdmiRecStop, at the
+    # `mov r0, #n` before FUN_c0017140(n).
+    'hstart': ('rec_trigger.S', ('REC_HDMI',), 0xC0517D48, 0xE3A00001, 0),
+    'hstop':  ('rec_trigger.S', ('REC_HDMI', 'REC_STOP'), 0xC0517D98, 0xE3A00000, 0),
     # The STILL/CINE mode being set.  Not part of the stream at all: it decides
     # which way up a take's frames say they are, which has to happen long
     # before the take.  Base does not arm it -- see mode_hook.S.
@@ -170,10 +174,15 @@ def _check_header():
         if site is None:
             continue                    # not a hook: placed code the hooks call
         text = (HERE / source).read_text()
-        if 'REC_STOP' in [d for d in defines]:
-            text = text.split('#ifdef REC_STOP')[1].split('#else')[0]
-        elif '#ifdef REC_STOP' in text:
-            text = text.split('#else')[1].split('#endif')[0]
+        # rec_trigger.S carries four variants, each an `.equ SITE` followed by
+        # its `.equ SITE_ORIG`; the pair has to be there as a pair.
+        pairs = {(int(a, 16), int(b, 16)) for a, b in re.findall(
+            r'\.equ\s+SITE,\s*(0x[0-9A-Fa-f]+)\s*\n\.equ\s+SITE_ORIG,\s*(0x[0-9A-Fa-f]+)', text)}
+        if pairs:
+            if (site, orig) not in pairs:
+                raise SystemExit(f'{name}: {source} has no SITE 0x{site:08X} with '
+                                 f'SITE_ORIG 0x{orig:08X}')
+            continue
         if f'{site:#010X}'.replace('0X', '0x') not in text.replace('0X', '0x'):
             if f'0x{site:08X}' not in text:
                 raise SystemExit(f'{name}: {source} does not mention site 0x{site:08X}')
@@ -319,7 +328,8 @@ def arm(only=None):
     import ring_task_deploy as R
     _code, at = R.place()               # assembles and resolves; writes nothing
     BODY = {'accel': 'accel_hook', 'start': 'rec_start',
-            'stop': 'rec_stop', 'mode': 'mode_hook'}
+            'stop': 'rec_stop', 'mode': 'mode_hook',
+            'hstart': 'hdmi_start', 'hstop': 'hdmi_stop'}
     for name in PRODUCERS:
         if only and name not in only:
             continue

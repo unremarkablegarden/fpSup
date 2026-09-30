@@ -66,7 +66,17 @@
  * a measurement.
  */
 
-#ifdef REC_STOP
+#if defined(REC_HDMI) && defined(REC_STOP)
+.equ SITE,        0xC0517D98
+.equ SITE_ORIG,   0xE3A00000          /* mov r0, #0 */
+#define COUNT_WORD  g_r1_n
+#define LATCH_WORD  g_r1_gc
+#elif defined(REC_HDMI)
+.equ SITE,        0xC0517D48
+.equ SITE_ORIG,   0xE3A00001          /* mov r0, #1 */
+#define COUNT_WORD  g_r0_n
+#define LATCH_WORD  g_r0_gc
+#elif defined(REC_STOP)
 .equ SITE,        0xC038C484
 .equ SITE_ORIG,   0xE3500000          /* cmp r0, #0 */
 #define COUNT_WORD  g_r1_n
@@ -82,7 +92,13 @@
  * hooks moved out of the cave and only an eight-byte veneer stays behind, so
  * this file is included twice -- once plain, once with REC_STOP -- and two
  * copies of one label would not assemble. */
-#ifdef REC_STOP
+#if defined(REC_HDMI) && defined(REC_STOP)
+    .global hdmi_stop
+hdmi_stop:
+#elif defined(REC_HDMI)
+    .global hdmi_start
+hdmi_start:
+#elif defined(REC_STOP)
     .global rec_stop
 rec_stop:
 #else
@@ -90,6 +106,19 @@ rec_stop:
 rec_start:
 #endif
     push    {r0, r1, r2, r3, ip, lr}
+
+#ifndef REC_STOP
+    /* Which recorder this take belongs to.  writer_openfile names an HDMI
+     * take differently: the camera's clip counter does not advance when
+     * nothing is recorded internally. */
+    SHAREDAT    r0, O_T_HDMI
+#ifdef REC_HDMI
+    mov     r1, #1
+#else
+    mov     r1, #0
+#endif
+    str     r1, [r0]
+#endif
 
     ldr     r2, COUNT_WORD
     add     r3, r2, #1
@@ -165,7 +194,11 @@ rec_start:
     blxne   ip
 
     pop     {r0, r1, r2, r3, ip, lr}
-#ifdef REC_STOP
+#if defined(REC_HDMI) && defined(REC_STOP)
+    mov     r0, #0                      @ the displaced instruction
+#elif defined(REC_HDMI)
+    mov     r0, #1                      @ the displaced instruction
+#elif defined(REC_STOP)
     cmp     r0, #0                      @ the displaced instruction.  It only
                                         @ sets the flags for the beq that
                                         @ follows, and r0 -- FUN_c0399150's

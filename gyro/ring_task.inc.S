@@ -277,6 +277,12 @@
 .equ ACCEL_SITE,     0xC050D4C8
 .equ START_SITE,     0xC03790B8
 .equ STOP_SITE,      0xC038C484
+/* REC on the body with HDMI RAW out: FUN_c04a6720 calls HdmiRecStart
+ * (0xC0517D20) or HdmiRecStop (0xC0517D58) and the internal recorder never
+ * runs.  Each site is the `mov r0, #n` before FUN_c0017140(n); both functions
+ * push lr in their first instruction, so a bl there costs nothing. */
+.equ HSTART_SITE,    0xC0517D48
+.equ HSTOP_SITE,     0xC0517D98
 /* The fourth site is the mode being set, and only the gcsv edition arms it:
  * base is the stream and nothing else.  FUN_c0058308's `mov r5, r1`
  * (0xE1A05001), after a prologue that has already pushed lr.  0xC072E6A0 is in

@@ -63,40 +63,39 @@ OUT = HERE / 'release' / 'base'
 
 READMES = {}
 
-READMES['base'] = """fpGyroSup Base {version} -- SIGMA fp firmware Ver.5.02 only
+READMES['base'] = """fpGyroSup Base + HDMI {version} -- SIGMA fp firmware Ver.5.02 only
 
-Put AutoRun.txt and fpSup.BIN in the root of the SD card the camera boots
-from.  Nothing has to be prepared on the disks you record to: the log goes
-to the ROOT of the disk the take went to, not into a GYRO folder.  There is
-nothing to create and nothing to put back after a format -- people forgot
-the folder and reported the log missing, and the camera cannot make one for
-them: the only two moments it could are while a take is starting (which
-froze it) or at boot, when it can only guess which disk you will use.  An
-old GYRO folder still on a card is now just an empty folder.
+INSTALL
+    Copy AutoRun.txt, fpSup.BIN and the FPSUPUI folder to the root of the SD
+    card the camera boots from.  Boot with the USB cable unplugged: the fpSup
+    logo appears top left and four boxes fill; all four filled means loaded.
 
-Then record.  Each take writes
+RECORD
+    Internal CinemaDNG     \\A001_037.GYR + \\A001_037.json
+                           in the root of the disk the take went to
+    External recorder      \\H001_001.GYR + \\H001_001.json
+    (HDMI RAW, e.g. Ninja) in the root of the SD card
 
-    \\A001_037.GYR    in the root of the disk \\CINEMA\\A001_037 went to
+    For external takes, start AND stop with the REC button on the fp body.
+    A stop pressed on the recorder does not reach the camera, so the log
+    keeps running until the next REC press on the fp.  H numbers count up
+    and never overwrite an earlier file.
 
-64 bytes of header and then nothing but 8-byte records, gyro and
-accelerometer interleaved in the order they happened.  Convert with
+    The .json of an external take describes the camera's HDMI monitor mode
+    (3856x2170 @59.94), not the recorded clip; set its size and frame rate
+    to the clip's before use.  gyroflow-batch-resolve does this for you.
 
-    ./gyro/gyr7.py A001_037.GYR --gcsv A001_037.gcsv
+CONVERT
+    https://ijigen.github.io/fpSup/gyro/convert/     one take, in a browser
+    https://github.com/unremarkablegarden/gyroflow-batch-resolve
+                                                     a whole card: matches
+                                                     takes to recorder clips
+                                                     and writes .gyroflow files
 
-If a take produces no .GYR, look in the root of the disk it went to and
-then in the root of the SD card, which is where the log goes when it cannot
-be opened on the other disk.  If it is in neither, the logger did not start:
-check that all four boxes filled at boot.
-
-This card carries the stream and nothing else: no gcsv on the camera, no
-lens profile, no USB shell.  If you would rather the camera wrote the .gcsv and
-the .json for you and left no .GYR at all, that is the main fpGyroSup release,
-in the same folder.
-
-    https://ijigen.github.io/fpSup/gyro/convert/ convert in a browser
-    https://ijigen.github.io/fpSup/gyro/web/     the older converter, which also
-                                                 writes a lens profile .json
-    ./gyro/gyr7.py                               convert on the command line
+REMOVE
+    Delete the files or take the card out, then switch the camera off: the
+    card writes back every firmware word it changed as the camera powers off.
+    If the camera froze, take the battery out (USB cable unplugged).
 """
 
 READMES['gcsv'] = """fpGyroSup {version} -- SIGMA fp firmware Ver.5.02 only

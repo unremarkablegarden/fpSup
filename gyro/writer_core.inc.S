@@ -66,6 +66,8 @@ gsup_offsets:
     .word   0       @ +0x34  rec_start
     .word   0       @ +0x38  rec_stop
     .word   0       @ +0x3C  mode_hook (that edition only)
+    .word   0       @ +0x40  hdmi_start
+    .word   0       @ +0x44  hdmi_stop
 
 /* Shared state, reached through the pool pointer rather than pc-relatively.
  *
@@ -168,6 +170,7 @@ g_t_jobslot:  .word   0     /* the job the kernel handed back */
 g_t_want:     .word   0     /* 1 = a take wants the file */
 g_t_build:    .word   0     /* how far take_open may build */
 g_t_teardown: .word   0     /* how far take_close may tear down */
+g_t_hdmi:     .word   0     /* 1 = the take started from HdmiRecStart */
 
 .equ O_T_BYTES,  g_t_bytes  - gsup_offsets
 .equ O_T_WRITES, g_t_writes - gsup_offsets
@@ -218,6 +221,7 @@ g_t_teardown: .word   0     /* how far take_close may tear down */
 .equ O_W_OPENS, g_w_opens - gsup_offsets
 .equ O_W_CLOSES, g_w_closes - gsup_offsets
 .equ O_W_STAGE, g_w_stage - gsup_offsets
+.equ O_T_HDMI, g_t_hdmi - gsup_offsets
 .equ O_T_POS, g_t_pos - gsup_offsets
 .equ O_T_SEEKS, g_t_seeks - gsup_offsets
 .equ O_W_VT, g_w_vt - gsup_offsets
@@ -1275,6 +1279,14 @@ gsup_boot:
     movw    r1, #:lower16:STOP_SITE
     movt    r1, #:upper16:STOP_SITE
     bl      s_hook
+    ldr     r0, [r5, #64]               @ hdmi_start
+    movw    r1, #:lower16:HSTART_SITE
+    movt    r1, #:upper16:HSTART_SITE
+    bl      s_hook
+    ldr     r0, [r5, #68]               @ hdmi_stop
+    movw    r1, #:lower16:HSTOP_SITE
+    movt    r1, #:upper16:HSTOP_SITE
+    bl      s_hook
 #ifdef WANT_MODE_HOOK
     ldr     r0, [r5, #60]               @ mode_hook
     movw    r1, #:lower16:MODE_SITE
@@ -1465,6 +1477,12 @@ g_gcount:   .word   0       /* gyro records seen -- the rate ruler            */
 #define REC_STOP 1
 #include "rec_trigger.S"
 #undef REC_STOP
+#define REC_HDMI 1
+#include "rec_trigger.S"
+#define REC_STOP 1
+#include "rec_trigger.S"
+#undef REC_STOP
+#undef REC_HDMI
 #ifdef WANT_MODE_HOOK
 #include "mode_hook.S"
 #endif

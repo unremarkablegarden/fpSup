@@ -1,202 +1,69 @@
-# fpSup
+# fpSup Gyro Base + HDMI
 
-[![supMe on Ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/fpsup)
-[![Join the fpSup Discord](https://img.shields.io/badge/Discord-Join-5865F2?logo=discord&logoColor=white)](https://discord.gg/WVTCcpGUYC)
+A fork of [ijigen/fpSup](https://github.com/ijigen/fpSup) for the SIGMA fp (firmware 5.02 only). It is fpSup-Gyro-Base v1.14.0 with one addition: it also logs the gyro when you record to an external HDMI recorder, such as an Atomos Ninja V recording ProRes RAW.
 
-**SIGMA fp firmware research and on-camera tools.**
-**SIGMA fp 韌體研究與機身端工具。**
+Upstream Base only logs while the camera records internally. With a Ninja attached and HDMI RAW out, pressing REC on the fp produced no gyro file. With this card it does.
 
-[English](#english) | [繁體中文](#繁體中文) · **[→ ijigen.github.io/fpSup](https://ijigen.github.io/fpSup/)**
+## Download
 
-Everything here runs from an `AutoRun.txt` on the SD card, in RAM only. Remove the
-file, power-cycle, and the camera is stock. **Nothing is ever written to flash.**
-**Firmware Ver.5.02 only** — a card built for one version writes into whatever
-happens to be at those addresses on another.
+[`release/fpSup-Base-HDMI-v1.14.0-hdmi1/`](release/fpSup-Base-HDMI-v1.14.0-hdmi1/)
 
----
+Copy `AutoRun.txt`, `fpSup.BIN` and the `FPSUPUI` folder to the root of the SD card the camera boots from. Boot with the USB cable unplugged. The fpSup logo appears top left and four boxes fill; all four filled means the card is loaded. The card's `README.txt` has the details.
 
-## English
+Like every fpSup card, it changes nothing permanently: the changes live in RAM and are written back when the camera powers off. Remove the files to go back to stock.
 
-### Start here
+## What it writes
 
-**[ijigen.github.io/fpSup](https://ijigen.github.io/fpSup/)** — the tools, the
-releases and the reference, in one page.
-
-**[fpSup-Merge](https://ijigen.github.io/fpSup/tools/card-composer/)** — pick the
-products you want on one card and get `AutoRun.txt` and `fpSup.BIN`. Merged cards are
-produced here and nowhere else, and every combination is checked against the same
-rules the build scripts use. Runs in the browser — no toolchain, no camera.
-
-### Releases
-
-Two files each — copy `AutoRun.txt` and the payload container to the root of
-the card (`fpSup.BIN`; releases published before 2026-09-19 name it `VSHL.BIN`). No
-folder to make, nothing to convert, no step afterwards. To put two of them on one
-card, use the composer rather than copying both.
-
-| product | version | what it does |
+| Recording to | Files | Where |
 |---|---|---|
-<!-- releases:begin:en -->
-| [`fpsup-gyro`](releases/fpsup-gyro-v1.14.0/) | v1.14.0 | Writes Gyroflow's `.gcsv` and `.json` while recording — every sample at 2500 Hz, distortion read off the lens. The profile now carries the size the take was actually recorded at, which open gate got wrong. |
-| [`fpsup-gyro-base`](releases/fpsup-gyro-base-v1.14.0/) | v1.14.0 | Writes the gyro and accelerometer as a raw .GYR in the root of the disk the take went to — every sample, nothing on the camera but the stream — converted afterwards in a browser. Same code as fpGyroSup v1.14.0. |
-| [`fpsup-og2k`](releases/fpsup-og2k-v0.1.3a/) | v0.1.3a | The same open gate at 2016×1344, on the sensor's quiet readout at every frame rate. 98 MB/s at 24p 12-bit, 8.3 ms rolling shutter. Test build. |
-| [`fpsup-og3k`](releases/fpsup-og3k-v0.2.6a/) | v0.2.6a | The sensor's whole 3:2 area at 3024×2010, eight frame rates from 23.976 to 100, native UI in Settings and Quick Set. 221 MB/s at 24p 12-bit — this needs an external SSD, not an SD card. Alpha. |
-| [`fpsup-raw-view`](releases/fpsup-raw-view-v0.2.2test/) | v0.2.2test | RAW monitoring for CinemaDNG 12-bit: a RAW row in the COLOR menu makes the LCD show what will be recorded — recording gain in standby, sensor saturation as white, two latitude curves (SA/GA) mapped onto a 709 screen. The recorded RAW is not changed. Test build; ordinary card and Fast Start 2. |
-| [`fpsup-usbshell`](releases/fpsup-usbshell-v3.3.0/) | v3.3.0 | The shell that answers `shl` over USB, parasitic on the camera's own PTP gadget so the firmware keeps owning the endpoints. |
-<!-- releases:end:en -->
+| Internal CinemaDNG (as upstream) | `A001_037.GYR` + `A001_037.json` | root of the disk the take went to |
+| External recorder over HDMI | `H001_001.GYR` + `H001_001.json` | root of the SD card |
 
-**The two open-gate builds see the same picture.** OG2K is the sensor reduced by three
-rather than two, so it is a third of the data and stays on the quiet readout even at 100p.
-They cannot share a card — the resolution menu holds three entries and each build takes the
-third. **Super35/crop must be off for either.** Both are pre-release; each release's
-`README.txt` lists exactly what was verified and what was not. Open gate on an fp was first
-done by [Vitaly Li](https://www.facebook.com/groups/1124721801045663/permalink/3266113850239770/).
+`.GYR` is the raw gyro + accelerometer stream at 2499.466 Hz; `.json` is the camera's Gyroflow lens profile. Convert one take with the [fpSup web converter](https://ijigen.github.io/fpSup/gyro/convert/), or a whole card with [gyroflow-batch-resolve](https://github.com/unremarkablegarden/gyroflow-batch-resolve), which also finds each Ninja clip inside the logs and writes `.gyroflow` files for the Gyroflow plugin in DaVinci Resolve and other editors.
 
-Named `fpsup-<product>-v<version>`, one directory each, and the tag is spelled
-identically — see [`releases/README.md`](releases/README.md) and
-[`releases/TAGS.md`](releases/TAGS.md).
+## Shooting with a recorder
 
-> **The thing most likely to bite:** CinemaDNG is limited by write speed long
-> before anything else. Open gate at 24p is about 221 MB/s at 12-bit, 184 at
-> 10-bit and 148 at 8-bit; a mid-range UHS-II card measured here sustains 94,
-> and plain FHD 12-bit already needs 97. A card that
-> cannot keep up buffers in RAM and then stops the take. That is the card, not a
-> bug — [`tools/storage-benchmark/`](tools/storage-benchmark/) measures yours.
+- Start and stop with the REC button on the fp body. The camera also sees a start pressed on the Ninja, but not a stop, so the log then runs on until the next REC press on the fp.
+- The `.json` of an external take describes the camera's HDMI monitor mode (3856×2170 @59.94), not the recorded clip. Set its size and frame rate to the clip's before using it; gyroflow-batch-resolve does this. The rolling-shutter readout in it (6.16 ms) is not verified for HDMI RAW.
 
-### Projects
+## What is different from upstream
 
-Each page says what has been proven, what is being worked on, and what is open.
+Upstream starts the logger where the internal movie recorder starts (`0xC03790B8`, right after `XC_AudioRecorder::Start`) and stops it in `cDevt_stop` (`0xC038C484`). With HDMI RAW out, the REC button handler `FUN_c04a6720` calls `HdmiRecStart` (`0xC0517D20`) or `HdmiRecStop` (`0xC0517D58`) instead, and the internal recorder never runs.
 
-| # | Project | What it is | Status |
-|---|---|---|---|
-| 1 | [**usb shell sup**](projects/usb-shell-sup.md) | USB firmware research and data transport | **released** — v3.2.0. The channel is built on the camera's own PTP gadget, so recording survives it |
-| 2 | [**sensor lab sup**](projects/sensor-lab-sup.md) | IMX410 modes, ISO, gain, sensor control | **research complete** — [explainer](https://ijigen.github.io/fpSup/explainers/imx410-iso-gain.html), and the mode-table ambiguity closed |
-| 3 | [**gyro sup**](projects/gyro-sup.md) | Gyro, six-axis logging, Gyroflow workflow | **released** — two editions; Base writes a raw `.GYR` instead, converted [in a browser](gyro/convert/) |
-| 4 | [**open gate**](projects/open-gate.md) | Recording the sensor's full 3:2 area | **OG3K v0.2.5a alpha · OG2K v0.1.2a test** — 3024×2010 or 2016×1344, same field of view; Super35/crop must remain off |
-| 5 | [**6k to ssd**](projects/6k-to-ssd.md) | Getting the best 6K the link can carry | designed; 8-bit lands within 94–100% of native 6K across every remaining unknown |
-| 6 | [**focus sup**](projects/focus-sup.md) | DFD, focus model, lens control, follow focus | AF decompiled in depth; no collector built |
-| 7 | [**raw sup**](projects/raw-sup.md) | Bayer capture, streaming, compression, packaging | researched; the engine's sustained rate is still the one unmeasured number |
-| 8 | [**ui sup**](projects/ui-sup.md) | On-screen display, boot animation | text, colour and a hardware overlay line all work on a camera |
-| 9 | [**power sup**](projects/power-sup.md) | USB-C power delivery and power saving | charging mechanism solved; the rest untouched |
-| — | [**firmware map**](projects/firmware-map.md) | Format, subsystems, task ABI, state sources | ongoing — not a product, the ground the rest stands on |
+This fork adds two hooks, in the same way as the upstream ones:
 
-<details>
-<summary><b>Stopped or paused</b> — kept because what they established still holds</summary>
-
-| Project | Why it is here |
-|---|---|
-| [**bridge**](projects/bridge.md) — [sigma-fp-bridge](https://github.com/ijigen/sigma-fp-bridge) | The most complete thing built on the fp's PTP surface. Its measurements of why host-side autofocus is hard, and that UHD 12-bit CinemaDNG cannot come over USB, are load-bearing here |
-| [**gimbal**](projects/gimbal.md) | SIGMA's `0x94xx` vendor protocol works during recording, unlike tethered focus. Relative drive only, but absolute position is readable |
-| [**color sup**](projects/color-sup.md) | The colour is reproduced; the tool is awkward and nothing is packaged |
-| [**fpRemote**](projects/fp-remote.md) | Not started. Wireless bridge and low-resolution streaming through AutoRun rather than PTP |
-
-</details>
-
-### Headline results
-
-- **The camera writes its own Gyroflow files while it records.** The GCSV streams
-  during the take and the JSON lands a few seconds in; stop is just stop. Zero
-  dropped samples over a 15-minute take, timestamps verified row by row.
-- **The 12-bit open-gate path works across every ISO, with native Settings and Quick Set UI.**
-  3024×2010 of a 3:2 sensor read, edge to edge — verified by unpacking a real
-  take, not inferred. v0.2.2a adds 8-bit and 10-bit: all three depths were
-  measured recording at OG3K geometry, where 8 and 10-bit previously fell back
-  to UHD30 without any on-screen sign. v0.2.1a's four-callsite shutter-angle fix
-  and loader instruction-cache synchronization carry forward. v0.2.3a fixes
-  v0.2.2a's format-table pass-through pointer; all 100 DNGs in exact no-shell
-  OG3K/UHD/FHD 25p/180° tests recorded at 1/50 with correct geometry. Super35/
-  crop must remain off. 8/10-bit playback and highlight headroom, other frame rates,
-  sustained-media and playback-with-UI regressions remain.
-- **The IMX410 ISO and gain chain is fully decompiled**, with an explainer that
-  separates firmware-confirmed behaviour from OTP values still needing measurement.
-- **The USB shell does not break recording.** It is built on the camera's own PTP
-  gadget, so the firmware owns the endpoints and re-creates them after a
-  record-mode reconfiguration.
-
-### Reference
-
-| | |
-|---|---|
-| [`docs/SHELL_COMMANDS.md`](docs/SHELL_COMMANDS.md) | the firmware shell's 77 commands, with usage text asked from a live camera |
-| [`docs/SHELL_CAPABILITIES.md`](docs/SHELL_CAPABILITIES.md) | what those commands reach — memory and I²C writes, menu setters, sensor readout modes |
-| [`docs/MENU_MODIFICATION.md`](docs/MENU_MODIFICATION.md) | every menu item carries its own metadata in ROM, right after its name string |
-| [`docs/FREEZE_ROOTCAUSE.md`](docs/FREEZE_ROOTCAUSE.md) | why the first USB shell froze the camera, mechanism and all |
-| [`BUILDING.md`](BUILDING.md) | how a card works and how to build, combine, test and release one — the walkthrough ([中文](BUILDING.zh.md)) |
-| [`SUP_BUILD_RULES.en.md`](SUP_BUILD_RULES.en.md) | the build contract every sup follows ([中文](SUP_BUILD_RULES.md)) |
-| [`HOOKS_AT_POWER_OFF.md`](HOOKS_AT_POWER_OFF.md) | why a hook must come out at power-off, and how |
-
----
-
-## 繁體中文
-
-### 從這裡開始
-
-**[ijigen.github.io/fpSup](https://ijigen.github.io/fpSup/)** —— 工具、釋出版、參考資料都在一頁。
-
-**[fpSup-Merge](https://ijigen.github.io/fpSup/tools/card-composer/)** —— 勾選要的產品,
-產生 `AutoRun.txt` 與 `fpSup.BIN`。**合併版只在這裡產生**,而且每個組合都用建置腳本
-同一套規則檢查過。在瀏覽器裡跑 —— 不用工具鏈,不用相機。
-
-### 釋出版
-
-每份就兩個檔 —— `AutoRun.txt` 與 `fpSup.BIN`(2026-09-19 之前發布的版本叫 `VSHL.BIN`)放進卡片根目錄。不用建資料夾、不用轉檔、事後沒有步驟。要把兩份放同一張卡,用合併器,不要兩份都複製。
-
-| 產品 | 版本 | 做什麼 |
+| Hook | Site | Displaced instruction |
 |---|---|---|
-<!-- releases:begin:zh -->
-| [`fpsup-gyro`](releases/fpsup-gyro-v1.14.0/) | v1.14.0 | 錄影當下就把 Gyroflow 要的 `.gcsv` 與 `.json` 寫進片段資料夾。2500 Hz 每個樣本都在,畸變直接讀鏡頭。profile 的尺寸改成實際錄下的那個 —— open gate 下先前是錯的。 |
-| [`fpsup-gyro-base`](releases/fpsup-gyro-base-v1.14.0/) | v1.14.0 | 在錄影那顆磁碟的根目錄寫一個原始 .GYR(陀螺儀與加速度計每個樣本都在),機上只做串流,事後在瀏覽器轉換。與 fpGyroSup v1.14.0 同一份程式。 |
-| [`fpsup-og2k`](releases/fpsup-og2k-v0.1.3a/) | v0.1.3a | 同樣的 open gate,2016×1344,每個幀率都走感光元件的安靜讀出。24p 12-bit 為 98 MB/s,捲簾 8.3 ms。測試版。 |
-| [`fpsup-og3k`](releases/fpsup-og3k-v0.2.6a/) | v0.2.6a | 感光元件完整的 3:2 面積,3024×2010,八個幀率從 23.976 到 100,Settings 與 QS 有原生 UI。24p 12-bit 為 221 MB/s ——這個碼率要外接 SSD,SD 卡不夠。Alpha。 |
-| [`fpsup-raw-view`](releases/fpsup-raw-view-v0.2.2test/) | v0.2.2test | CinemaDNG 12-bit 的 RAW 監看:COLOR 選單多一列 RAW,螢幕顯示即將錄下的內容——待機用錄影增益、感光元件飽和即白、兩條寬容度曲線(SA/GA)映射到 709 螢幕。錄下的 RAW 不被改動。測試版;附一般卡與 Fast Start 2 卡。 |
-| [`fpsup-usbshell`](releases/fpsup-usbshell-v3.3.0/) | v3.3.0 | 透過 USB 回應 `shl` 的 shell。寄生在相機自己的 PTP gadget 上,端點仍由韌體管。 |
-<!-- releases:end:zh -->
+| `hdmi_start` | `0xC0517D48` in `HdmiRecStart` | `mov r0, #1`, before `FUN_c0017140(1)` |
+| `hdmi_stop` | `0xC0517D98` in `HdmiRecStop` | `mov r0, #0`, before `FUN_c0017140(0)` |
 
-**兩個 open gate 看到的是同一個畫面。** OG2K 是把感光元件縮三倍而不是兩倍,所以資料量只有三分之一,
-而且連 100p 都還在安靜讀出上。兩者**不能放同一張卡** —— 解析度選單只有三格,各自佔用第三格。
-**兩者都必須關閉 Super35/crop。**都還是預覽版:各自的 `README.txt` 寫明了驗過什麼、沒驗什麼。
-最早在 fp 實現 open gate 的是 [Vitaly Li](https://www.facebook.com/groups/1124721801045663/permalink/3266113850239770/)。
+Both run the existing start and stop code unchanged. Both functions push `lr` in their first instruction, so a `bl` at these sites is safe. The two sites are journalled with the other hooks and restored at power-off.
 
-命名是 `fpsup-<產品>-v<版本>`,一個版本一個資料夾,tag 逐字相同 ——
-見 [`releases/README.md`](releases/README.md) 與 [`releases/TAGS.md`](releases/TAGS.md)。
+The camera's clip counter does not advance when nothing is recorded internally, so an HDMI take gets its own name: `H<reel>_<n>` instead of `A<reel>_<n>`, opened with the create-only mode `0x402`. If the name exists, `n` goes up by one, up to 50 tries, so no earlier log is overwritten and none collides with an internal clip.
 
-> **最可能咬人的一件事:** CinemaDNG 遠在其他東西之前就先被寫入速度卡住。
-> Open gate 24p 在 12/10/8-bit 各約 221 / 184 / 148 MB/s;這裡實測一張中階
-> UHS-II 卡持續寫入 94,而純 FHD 12bit 就已經要 97。撐不住的卡會先用 RAM 緩衝,然後**停止錄影** ——
-> 那是卡不是 bug。用 [`tools/storage-benchmark/`](tools/storage-benchmark/) 量自己的。
+Changed files: `gyro/rec_trigger.S`, `gyro/ring_task.inc.S`, `gyro/writer_core.inc.S`, `gyro/gcsv_task.S`, the hook and routine tables in `gyro/imu_stream_deploy.py`, `gyro/ring_task_deploy.py` and `gyro/release_card.py`, the hook counts in `gyro/test_imu_stream.py`, and the card's README text in `gyro/build_base_card.py`. The release is built with the four-box boot screen (`--four-box-bar`).
 
-### 項目
+Everything else in upstream (the other sups, the research, the site) is left out of this fork: it holds only what builds and tests this card. For the full project, go upstream.
 
-每一頁都寫清楚已經證實了什麼、正在做什麼、還有什麼沒解。
+## Tested
 
-| # | 項目 | 是什麼 | 狀態 |
-|---|---|---|---|
-| 1 | [**usb shell sup**](projects/usb-shell-sup.md) | USB 韌體研究與資料傳輸 | **已釋出** —— v3.2.0。通道建在相機自己的 PTP gadget 上,所以錄影撐得過去 |
-| 2 | [**sensor lab sup**](projects/sensor-lab-sup.md) | IMX410 模式、ISO、增益、感光元件控制 | **研究完成** —— [互動說明](https://ijigen.github.io/fpSup/explainers/imx410-iso-gain.html),模式表的歧義也收掉了 |
-| 3 | [**gyro sup**](projects/gyro-sup.md) | 陀螺儀、六軸記錄、Gyroflow 流程 | **已釋出** —— 兩個版本;Base 版寫原始 `.GYR`,[在瀏覽器裡](gyro/convert/)轉換 |
-| 4 | [**open gate**](projects/open-gate.md) | 錄下感光元件完整的 3:2 面積 | **OG3K v0.2.5a alpha · OG2K v0.1.2a test** —— 3024×2010 或 2016×1344,視角相同;Super35/crop 必須關閉 |
-| 5 | [**6k to ssd**](projects/6k-to-ssd.md) | 把鏈路載得動的最好 6K 拿出來 | 設計完成;8bit 在所有剩餘未知數下都落在原生 6K 的 94–100% |
-| 6 | [**focus sup**](projects/focus-sup.md) | DFD、對焦模型、鏡頭控制、跟焦 | AF 深度反編譯完成;收集器還沒做 |
-| 7 | [**raw sup**](projects/raw-sup.md) | Bayer 擷取、串流、壓縮、封裝 | 研究過;引擎的持續速率仍是唯一沒量到的數字 |
-| 8 | [**ui sup**](projects/ui-sup.md) | 螢幕顯示、開機動畫 | 螢幕出字可行;顏色編碼未解 |
-| 9 | [**power sup**](projects/power-sup.md) | USB-C 供電與省電 | 充電機制已解;其餘未動 |
-| — | [**firmware map**](projects/firmware-map.md) | 格式、子系統、任務 ABI、狀態來源 | 進行中 —— 不是產品,是其他東西站著的地面 |
+SIGMA fp firmware 5.02 with an Atomos Ninja V, ProRes RAW 3840×2160 24p:
 
-### 主要成果
+- An internal take still logs as upstream.
+- REC on the fp with the Ninja attached logs `H001_577`. A start from the Ninja's screen logs too.
+- The HDMI logs sync in Gyroflow with a spread of 2.6–8.8 ms across five sync points, and stabilise correctly.
 
-- **相機自己在錄影當下寫出 Gyroflow 要的檔案。** GCSV 邊錄邊串流,JSON 開始幾秒後落地,停止就只是停止。15 分鐘的 take 零掉樣,時間戳逐列驗過。
-- **Open gate 的 12-bit 路徑已驗證全 ISO,原生 UI 已整合。** 3:2 讀出的 3024×2010,整幅邊到邊 —— 解檔實錄驗證,不是推論。v0.2.2a 新增 8-bit 與 10-bit;v0.2.3a 修正 format-table pass-through 指標。精確 no-shell 的 OG3K/UHD/FHD 25p/180°三段共100張 DNG 全為1/50且幾何正確。OG3K 必須關閉 Super35/crop。8/10-bit 的回放與高光餘裕、其他幀率、長時間寫入與新 UI runtime 回放仍待回歸。
-- **IMX410 的 ISO 與增益鏈完整反編譯**,說明頁把「韌體確認的行為」跟「還需要量測的 OTP 值」分開。
-- **USB shell 不會弄壞錄影。** 它建在相機自己的 PTP gadget 上,端點由韌體管,錄影模式重配之後韌體會自己重建。
+## Build
 
-### 參考
+Needs Python 3 and clang (Xcode command line tools on macOS).
 
-| | |
-|---|---|
-| [`BUILDING.zh.md`](BUILDING.zh.md) | 卡片怎麼運作、怎麼建卡、合併、測試與發布 —— 完整流程說明([English](BUILDING.md)) |
-| [`SUP_BUILD_RULES.md`](SUP_BUILD_RULES.md) | 每個 sup 都要遵守的建置規範([English](SUP_BUILD_RULES.en.md)) |
-| [`HOOKS_AT_POWER_OFF.md`](HOOKS_AT_POWER_OFF.md) | 為什麼 hook 關機時必須拆掉、怎麼拆(英文,附中文摘要) |
+```bash
+python3 gyro/build_base_card.py --edition base --version v1.14.0-hdmi1 --four-box-bar --out release/fpSup-Base-HDMI-v1.14.0-hdmi1
+cd gyro && python3 test_imu_stream.py && python3 test_lifecycle.py && python3 test_gcsv_format.py
+```
 
----
+The build is reproducible: the command above produces the files in `release/` byte for byte (see `SHA256SUMS.txt`).
 
-**Support** · [Ko-fi](https://ko-fi.com/fpsup) · [Discord](https://discord.gg/WVTCcpGUYC)
+## Credits
+
+All of fpSup is the work of [ijigen](https://github.com/ijigen) and the fpSup contributors ([Discord](https://discord.gg/WVTCcpGUYC)). This fork only adds the HDMI hooks and is meant to go back upstream.
