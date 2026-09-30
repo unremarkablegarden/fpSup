@@ -107,6 +107,15 @@ rec_start:
 #endif
     push    {r0, r1, r2, r3, ip, lr}
 
+#if defined(REC_HDMI) && !defined(REC_STOP)
+    /* gsup_boot may already have started the log for a session the camera
+     * booted into; a second start would open a second take over it. */
+    SHAREDAT    r0, O_T_WANT
+    ldr     r0, [r0]
+    cmp     r0, #0
+    bne     8f
+#endif
+
 #ifndef REC_STOP
     /* Which recorder this take belongs to.  writer_openfile names an HDMI
      * take differently: the camera's clip counter does not advance when
@@ -193,7 +202,7 @@ rec_start:
     cmp     ip, #0
     blxne   ip
 
-    pop     {r0, r1, r2, r3, ip, lr}
+8:  pop     {r0, r1, r2, r3, ip, lr}
 #if defined(REC_HDMI) && defined(REC_STOP)
     mov     r0, #0                      @ the displaced instruction
 #elif defined(REC_HDMI)

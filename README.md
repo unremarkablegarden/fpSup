@@ -8,7 +8,7 @@ Companion tool: [gyroflow-batch-resolve](https://github.com/unremarkablegarden/g
 
 ## Download
 
-[`release/fpSup-Base-HDMI-v1.14.0-hdmi1/`](release/fpSup-Base-HDMI-v1.14.0-hdmi1/)
+[`release/fpSup-Base-HDMI-v1.14.0-hdmi2/`](release/fpSup-Base-HDMI-v1.14.0-hdmi2/)
 
 Copy `AutoRun.txt`, `fpSup.BIN` and the `FPSUPUI` folder to the root of the SD card the camera boots from. Boot with the USB cable unplugged. The fpSup logo appears top left and four boxes fill; all four filled means the card is loaded. The card's `README.txt` has the details.
 
@@ -25,7 +25,8 @@ Like every fpSup card, it changes nothing permanently: the changes live in RAM a
 
 ## Shooting with a recorder
 
-- Start and stop with the REC button on the fp body. The camera also sees a start pressed on the Ninja, but not a stop, so the log then runs on until the next REC press on the fp.
+- An external log covers the whole HDMI session, not one take. It starts at boot if the Ninja is already attached, otherwise at the first REC press on the fp, and runs until HDMI record output ends or the camera is switched off. Clips recorded meanwhile from either REC button are all in it; gyroflow-batch-resolve finds each clip inside the log.
+- The Ninja's REC button does not reach the camera, so it cannot start a log on its own. Boot with the Ninja attached, or press REC on the fp once at the start of a session.
 - The `.json` of an external take describes the camera's HDMI monitor mode (3856×2170 @59.94), not the recorded clip. Set its size and frame rate to the clip's before using it; gyroflow-batch-resolve does this. The rolling-shutter readout in it (6.16 ms) is not verified for HDMI RAW.
 
 ## What is different from upstream
@@ -41,6 +42,8 @@ This fork adds two hooks, in the same way as the upstream ones:
 
 Both run the existing start and stop code unchanged. Both functions push `lr` in their first instruction, so a `bl` at these sites is safe. The two sites are journalled with the other hooks and restored at power-off.
 
+`HdmiRecStart` switches HDMI record output on for a session; while it stays on, further REC presses toggle the recorder with a message and do not call it again. When the camera boots with the recorder attached, that happens before the card has armed its hooks. So after arming, `gsup_boot` reads the output state (`0xC3033A50`, 1 = on) and starts the log itself if it is already on, and `hdmi_start` does nothing while a log is running.
+
 The camera's clip counter does not advance when nothing is recorded internally, so an HDMI take gets its own name: `H<reel>_<n>` instead of `A<reel>_<n>`, opened with the create-only mode `0x402`. If the name exists, `n` goes up by one, up to 50 tries, so no earlier log is overwritten and none collides with an internal clip.
 
 Changed files: `gyro/rec_trigger.S`, `gyro/ring_task.inc.S`, `gyro/writer_core.inc.S`, `gyro/gcsv_task.S`, the hook and routine tables in `gyro/imu_stream_deploy.py`, `gyro/ring_task_deploy.py` and `gyro/release_card.py`, the hook counts in `gyro/test_imu_stream.py`, and the card's README text in `gyro/build_base_card.py`. The release is built with the four-box boot screen (`--four-box-bar`).
@@ -52,7 +55,8 @@ Everything else in upstream (the other sups, the research, the site) is left out
 SIGMA fp firmware 5.02 with an Atomos Ninja V, ProRes RAW 3840×2160 24p:
 
 - An internal take still logs as upstream.
-- REC on the fp with the Ninja attached logs `H001_577`. A start from the Ninja's screen logs too.
+- REC on the fp with the Ninja attached logs `H001_577`.
+- Booted with the Ninja attached: the log starts at boot and holds a clip started on the fp and one started on the Ninja, 9.58 s apart in the log and by the clips' Free Run timecode.
 - The HDMI logs sync in Gyroflow with a spread of 2.6–8.8 ms across five sync points, and stabilise correctly.
 
 ## Build
@@ -60,7 +64,7 @@ SIGMA fp firmware 5.02 with an Atomos Ninja V, ProRes RAW 3840×2160 24p:
 Needs Python 3 and clang (Xcode command line tools on macOS).
 
 ```bash
-python3 gyro/build_base_card.py --edition base --version v1.14.0-hdmi1 --four-box-bar --out release/fpSup-Base-HDMI-v1.14.0-hdmi1
+python3 gyro/build_base_card.py --edition base --version v1.14.0-hdmi2 --four-box-bar --out release/fpSup-Base-HDMI-v1.14.0-hdmi2
 cd gyro && python3 test_imu_stream.py && python3 test_lifecycle.py && python3 test_gcsv_format.py
 ```
 

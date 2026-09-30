@@ -76,10 +76,12 @@ RECORD
     External recorder      \\H001_001.GYR + \\H001_001.json
     (HDMI RAW, e.g. Ninja) in the root of the SD card
 
-    For external takes, start AND stop with the REC button on the fp body.
-    A stop pressed on the recorder does not reach the camera, so the log
-    keeps running until the next REC press on the fp.  H numbers count up
-    and never overwrite an earlier file.
+    An external log covers the whole HDMI session, not one take: it starts
+    at boot when the recorder is already attached, otherwise at the first
+    REC press on the fp, and runs until HDMI record output ends or the
+    camera is switched off.  Every clip recorded meanwhile is in it, from
+    either REC button; gyroflow-batch-resolve finds each clip inside it.
+    H numbers count up and never overwrite an earlier file.
 
     The .json of an external take describes the camera's HDMI monitor mode
     (3856x2170 @59.94), not the recorded clip; set its size and frame rate

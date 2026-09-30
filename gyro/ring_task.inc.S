@@ -283,6 +283,9 @@
  * push lr in their first instruction, so a bl there costs nothing. */
 .equ HSTART_SITE,    0xC0517D48
 .equ HSTOP_SITE,     0xC0517D98
+/* HDMI record output state, 1 = on: FUN_c00178d8() + 0x18 + 0x204, the word
+ * FUN_c0017140 sets (1 from HdmiRecStart, 0 from HdmiRecStop). */
+.equ HDMI_REC_STATE, 0xC3033A50
 /* The fourth site is the mode being set, and only the gcsv edition arms it:
  * base is the stream and nothing else.  FUN_c0058308's `mov r5, r1`
  * (0xE1A05001), after a prologue that has already pushed lr.  0xC072E6A0 is in

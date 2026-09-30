@@ -1298,6 +1298,18 @@ gsup_boot:
     movt    ip, #:upper16:F_CACHE
     blx     ip
 
+    /* Booted with the recorder attached: HDMI record output is already on, so
+     * HdmiRecStart ran before its hook existed, and while the output stays on
+     * REC toggles the recorder with a message instead of calling it again.
+     * Start the HDMI log here, so the session is covered from now on. */
+    movw    r0, #:lower16:HDMI_REC_STATE
+    movt    r0, #:upper16:HDMI_REC_STATE
+    ldr     r0, [r0]
+    cmp     r0, #1
+    bne     1f
+    bl      hdmi_start
+1:
+
 #ifdef WANT_MODE_HOOK
     /* And the mode we were loaded INTO.  The hook fires when the mode is set,
      * and a camera that booted from this card straight into cine has already
