@@ -4,6 +4,8 @@ A fork of [ijigen/fpSup](https://github.com/ijigen/fpSup) for the SIGMA fp (firm
 
 Upstream Base only logs while the camera records internally. With a Ninja attached and HDMI RAW out, pressing REC on the fp produced no gyro file. With this card it does.
 
+Companion tool: [gyroflow-batch-resolve](https://github.com/unremarkablegarden/gyroflow-batch-resolve) takes the SD card and the recorder SSD, matches every clip to its gyro log and writes the `.gyroflow` files for the Gyroflow plugin in Resolve and other editors.
+
 ## Download
 
 [`release/fpSup-Base-HDMI-v1.14.0-hdmi1/`](release/fpSup-Base-HDMI-v1.14.0-hdmi1/)
