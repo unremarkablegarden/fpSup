@@ -49,7 +49,7 @@ The fp sends its running timecode as SMPTE LTC on HDMI audio channel 1; channel 
 - MixPre-6: Advanced mode, Inputs → Aux In Mode = Timecode, Timecode → TC Mode = Aux In.
 - fp: 24.00 fps (not 23.98) and Free Run timecode. Other frame rates send wrong LTC.
 
-The recorder follows the fp as long as the cable is in, including after timecode resets and menu use. When the Ninja also records its analog input, that goes to tracks 1–2 and the HDMI audio (LTC on 3, fp mic on 4) moves to 3–4.
+The recorder follows the fp as long as the cable is in, including after timecode resets and menu use. How it works, what was found in the fp's audio path, and how it was tested: [docs/LTC_HDMI_AUDIO.md](docs/LTC_HDMI_AUDIO.md). When the Ninja also records its analog input, that goes to tracks 1–2 and the HDMI audio (LTC on 3, fp mic on 4) moves to 3–4.
 
 
 With HDMI RAW out the internal recorder never runs, so upstream's hooks never fire. This fork adds four hooks, built like upstream's and restored when the camera powers off:
