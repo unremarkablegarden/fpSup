@@ -39,7 +39,11 @@ Limits:
 
 ## Timecode to an audio recorder
 
-The fp sends its running timecode as SMPTE LTC on HDMI audio channel 1; channel 2 keeps the fp microphone. Cable it as:
+The fp sends its running timecode as SMPTE LTC on HDMI audio channel 1; channel 2 keeps the fp microphone.
+
+The fp already sends timecode over HDMI as metadata: a maker-specific data packet beside the picture, with the record start/stop flag. HDMI has no standard timecode field, so only a device that knows Sigma's packet reads it; the Ninja does, and the MixPre-6's list of supported cameras has no Sigma. LTC (linear timecode, SMPTE 12M) is the same value encoded as sound: one 80-bit word per frame, biphase-mark coded, which at 24 fps sounds like a 1–2 kHz buzz. As audio it passes through any audio path, including the Ninja's headphone out, and any LTC input can read it. It costs the fp mic one channel. The Ninja also records it on an audio track, and DaVinci Resolve can set a clip's timecode from an LTC audio track in post (not tested here).
+
+Cable it as:
 
 `fp HDMI → Ninja V → Ninja headphone out → recorder LTC input`
 
