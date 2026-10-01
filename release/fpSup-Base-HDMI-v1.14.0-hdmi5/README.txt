@@ -1,4 +1,4 @@
-fpGyroSup Base + HDMI v1.14.0-hdmi4 -- SIGMA fp firmware Ver.5.02 only
+fpGyroSup Base + HDMI v1.14.0-hdmi5 -- SIGMA fp firmware Ver.5.02 only
 
 INSTALL
     Copy AutoRun.txt, fpSup.BIN and the FPSUPUI and gyro_data folders to the
@@ -36,6 +36,23 @@ RECORD
     ignored) holds no clip and describes the HDMI monitor mode
     (3856x2170 @59.94).  gyroflow-batch-resolve sets size and frame rate
     from the clip either way.
+
+TIMECODE TO AN AUDIO RECORDER (LTC)
+    The fp's own timecode goes out as SMPTE LTC on HDMI audio channel 1,
+    for a recorder that reads LTC on an audio input (tested: Sound Devices
+    MixPre-6, Aux In).  Channel 2 keeps the fp microphone.
+
+        fp HDMI -> Ninja V -> Ninja headphone out -> recorder LTC input
+
+    Ninja: monitor the HDMI channel 1/2 pair on the headphones, volume
+    about 75 %.  MixPre-6: Advanced mode, Inputs > Aux In Mode = Timecode,
+    Timecode > TC Mode = Aux In.  The recorder follows the fp while the
+    cable is in, and keeps following after timecode resets or menu use.
+
+    24.00 fps only (not 23.98), Free Run timecode.  Other frame rates send
+    wrong LTC.
+    When the Ninja records its analog input, that goes to tracks 1-2 and
+    the HDMI audio (LTC on 3, fp mic on 4) moves to 3-4.
 
 CONVERT
     https://ijigen.github.io/fpSup/gyro/convert/     one take, in a browser

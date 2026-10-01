@@ -2,13 +2,13 @@
 
 A fork of [ijigen/fpSup](https://github.com/ijigen/fpSup) for the SIGMA fp (firmware 5.02 only). It is fpSup-Gyro-Base v1.14.0 plus gyro logging when you record to an external HDMI recorder, such as an Atomos Ninja V recording ProRes RAW: one log per take, with that take's focal length and timecode.
 
-In the source, not yet in a release: the fp's timecode as SMPTE LTC on HDMI audio channel 1, so an audio recorder with an LTC input (tested: Sound Devices MixPre-6) follows the camera's timecode through the recorder's headphone out. See [Timecode to an audio recorder](#timecode-to-an-audio-recorder).
+Since hdmi5 it also sends the fp's timecode as SMPTE LTC on HDMI audio channel 1, so an audio recorder with an LTC input (tested: Sound Devices MixPre-6) follows the camera's timecode through the recorder's headphone out. See [Timecode to an audio recorder](#timecode-to-an-audio-recorder).
 
 Companion tool: [gyroflow-batch-resolve](https://github.com/unremarkablegarden/gyroflow-batch-resolve) matches every recorder clip to its gyro log and writes a `.gyroflow` file for each, for the Gyroflow plugin in DaVinci Resolve and other editors.
 
 ## Install
 
-1. Download this repository (**Code → Download ZIP**) and open [`release/fpSup-Base-HDMI-v1.14.0-hdmi4/`](release/fpSup-Base-HDMI-v1.14.0-hdmi4/).
+1. Download this repository (**Code → Download ZIP**) and open [`release/fpSup-Base-HDMI-v1.14.0-hdmi5/`](release/fpSup-Base-HDMI-v1.14.0-hdmi5/).
 2. Copy `AutoRun.txt`, `fpSup.BIN`, `FPSUPUI` and `gyro_data` to the root of the SD card the camera boots from.
 3. Boot with the USB cable unplugged. The fpSup logo appears top left and four boxes fill when the card is loaded.
 
@@ -38,8 +38,6 @@ Limits:
 - A log opened before the recorder is ready holds no clip and describes the HDMI monitor mode (3856×2170 @59.94). gyroflow-batch-resolve takes size and frame rate from the clip anyway.
 
 ## Timecode to an audio recorder
-
-Not in `release/` yet: build the card from source (see [Build](#build)). Tested by loading the same routine over the USB shell; the card itself is not tested on the camera yet.
 
 The fp sends its running timecode as SMPTE LTC on HDMI audio channel 1; channel 2 keeps the fp microphone. Cable it as:
 
@@ -75,19 +73,19 @@ This fork holds only what builds and tests this card. For the rest of fpSup, go 
 
 SIGMA fp 5.02, Atomos Ninja V, ProRes RAW 3840×2160 24p, SIGMA 28-70mm F2.8 DG DN: internal takes log as upstream; takes started with REC and with the shutter each get their own log, with the right focal length and a timecode within one frame of the clip's; Gyroflow syncs them within a few milliseconds.
 
-LTC, loaded over the USB shell: a MixPre-6 on the Ninja's headphone out locked to the fp's timecode, stayed frame-matched for 5 minutes, and followed timecode resets and menu use. Frame accuracy of the MixPre's file stamp (a clap test) is not measured yet.
+LTC, SIGMA fp 5.02 with Ninja V and MixPre-6 (Series I) on the Ninja's headphone out: the MixPre locked to the fp's timecode from the hdmi5 card. Loaded over the USB shell beforehand, the same routine stayed frame-matched for 5 minutes and followed timecode resets and menu use. Frame accuracy of the MixPre's file stamp (a clap test) is not measured yet.
 
 ## Build
 
 Needs Python 3 and clang (Xcode command line tools on macOS). The LTC emulator test also needs `unicorn` (`pip install unicorn`) and `ltcdump` (`brew install ltc-tools`).
 
 ```bash
-python3 gyro/build_base_card.py --edition base --version dev --four-box-bar --out build/fpSup-Base-HDMI-dev
+python3 gyro/build_base_card.py --edition base --version v1.14.0-hdmi5 --four-box-bar --out build/fpSup-Base-HDMI-v1.14.0-hdmi5
 cd gyro && python3 test_imu_stream.py && python3 test_lifecycle.py && python3 test_gcsv_format.py
 cd ltc && python3 test_ltc_emu.py
 ```
 
-The build is reproducible. `release/fpSup-Base-HDMI-v1.14.0-hdmi4/` predates the LTC routine, so the source now builds a different card; the commit that release came from (`10c163a`) produces it byte for byte (see `SHA256SUMS.txt`).
+The build is reproducible: it produces the files in `release/fpSup-Base-HDMI-v1.14.0-hdmi5/` byte for byte (see `SHA256SUMS.txt`). It writes to `build/` so a test build cannot overwrite the release. hdmi4, without LTC, is commit `10c163a`.
 
 ## Credits
 

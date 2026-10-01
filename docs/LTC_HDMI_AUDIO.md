@@ -2,7 +2,7 @@
 
 SIGMA fp, firmware 5.02. The fp sends its own running timecode as SMPTE LTC on HDMI audio channel 1, with no sync box. An external recorder carries it on, and an audio recorder with an LTC input follows the camera. This note covers the fp's audio path, how the routine works, how it was found and tested, and what is still open. Code: `gyro/ltc/`. Card integration: `WANT_LTC` in `gyro/build_base_card.py`, `gyro/writer_core.inc.S` and `gyro/gcsv_task.S`.
 
-Status 2026-10-01: verified on a camera with an Atomos Ninja V and a Sound Devices MixPre-6 (Series I), both loaded over the USB shell and from the Base card. Frame accuracy of the recorder's file stamp has not been measured yet.
+Status 2026-10-01: in release `fpSup-Base-HDMI-v1.14.0-hdmi5`. Verified on a camera with an Atomos Ninja V and a Sound Devices MixPre-6 (Series I), both loaded over the USB shell and from the card. Frame accuracy of the recorder's file stamp has not been measured yet.
 
 ## Why
 
@@ -115,7 +115,7 @@ All of it ran over the fpSup USB shell (`fp_usb_shell/`, `fpshd` and `fpsh mem g
 5. The encoder was written in C and tested on the host first: `test_ltc.c` writes a 48 kHz WAV, and `ltcdump -f 24` decodes 60 s from 01:00:00:00 with no discontinuity. The simulated video changes at three different phases, including on the LTC frame boundary.
 6. `test_ltc_emu.py` runs the camera build under unicorn: it maps the state, ring and timecode addresses, calls the entry once per 1024-sample block with `r0` stepping as on the camera, and requires the output to be identical to the host build and to decode cleanly. It was also run with the blob at a second address, to check position independence. Collecting the wrong block makes the test fail.
 7. On the camera, loaded over USB: the MixPre locked and stayed frame-matched to the fp display for 5 minutes. The camera's `sending` and `live` values differed by one or two frames, as expected from two USB reads about 40–80 ms apart. Opening the menu broke it, which led to the code patch, which then survived menu use and timecode resets.
-8. The Base card with `WANT_LTC` booted and the MixPre locked.
+8. The Base card with `WANT_LTC` booted and the MixPre locked. Its `AutoRun.txt` and `fpSup.BIN` are the ones released as hdmi5.
 
 Runtime `mem set` on a firmware code word took effect with no cache maintenance in step 7. Do not rely on that in general: the card publishes its writes with `0xC000E91C` and `0xC000EABC`.
 
