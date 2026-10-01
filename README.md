@@ -1,4 +1,4 @@
-# fpSup Gyro Base + HDMI
+# fpSup Base + HDMI + LTC
 
 A fork of [ijigen/fpSup](https://github.com/ijigen/fpSup) for the SIGMA fp (firmware 5.02 only). It is fpSup-Gyro-Base v1.14.0 plus gyro logging when you record to an external HDMI recorder, such as an Atomos Ninja V recording ProRes RAW: one log per take, with that take's focal length and timecode.
 
