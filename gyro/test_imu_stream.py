@@ -301,8 +301,10 @@ class Header(unittest.TestCase):
         core = (HERE / 'writer_core.inc.S').read_text()
         hook = core[core.index('\ns_hook:'):]
         hook = re.sub(r'/\*.*?\*/', '', hook[:hook.index('\n9:')], flags=re.S)
-        seq = ['sub     r1, r0, r5', 'sub     r1, r1, #8', 'asr     r1, r1, #2',
-               'bic     r1, r1, #0xFF000000', 'orr     r1, r1, #0xEB000000']
+        seq = ['mov     r3, #0xEB000000', 'b       s_hook_op',
+               's_hook_b:', 'mov     r3, #0xEA000000', 's_hook_op:',
+               'sub     r1, r0, r5', 'sub     r1, r1, #8', 'asr     r1, r1, #2',
+               'bic     r1, r1, #0xFF000000', 'orr     r1, r1, r3']
         pos = -1
         for ins in seq:
             nxt = hook.find(ins)
@@ -512,7 +514,7 @@ class Editions(unittest.TestCase):
         the cave held a pointer to each; a direct `bl` replaced both."""
         self.assertEqual(self.R.GSUP_ROUTINES[12:],
                          ('accel_hook', 'rec_start', 'rec_stop', 'mode_hook',
-                          'hdmi_start', 'hdmi_stop', 'key_split'))
+                          'hdmi_start', 'hdmi_stop', 'key_split', 'ltc'))
         code = self.R.patch_offsets(
             assemble(HERE / 'gcsv_task.S', ()), self.gcsv)
         got = struct.unpack_from('<4I', code, 12 * 4)
@@ -548,14 +550,15 @@ class Editions(unittest.TestCase):
         # One call per hook, and each one allocates, writes the veneer and arms
         # the site in that order -- so "before" is now a property of s_hook, not
         # of where two blocks sit in gsup_boot.
-        self.assertEqual(code.count('bl      s_hook'), 7)
+        self.assertEqual(len(re.findall(r'bl\s+s_hook\b', code)), 7)
+        self.assertEqual(len(re.findall(r'bl\s+s_hook_b\b', code)), 1)   # ltc
         core_all = (HERE / 'writer_core.inc.S').read_text()
         hook = core_all[core_all.index('\ns_hook:'):]
         hook = hook[:hook.index('\n9:')]
         hook = re.sub(r'@.*', '', hook)
         self.assertLess(hook.index('CAVE_BUMP'), hook.index('VENEER_LDR'),
                         'the veneer is written before the cave says where')
-        self.assertLess(hook.index('VENEER_LDR'), hook.index('0xEB000000'),
+        self.assertLess(hook.index('VENEER_LDR'), hook.index('orr     r1, r1, r3'),
                         'the site is armed before the veneer exists')
         self.assertIn('bhi     9f', hook,
                       's_hook does not refuse when the cave is full')
@@ -1362,6 +1365,7 @@ class PowerOff(unittest.TestCase):
         import build_base_card as B
         got = {at: struct.unpack('<I', blob)[0] for at, blob, _ in B.hook_sites()}
         want = {site: orig for (_s, _d, site, orig, _t) in D.PRODUCERS.values()}
+        want[B.L.SITE] = B.L.SITE_STOCK    # armed by WANT_LTC in gsup_boot
         self.assertEqual(got, want)
         image = HERE.parents[1] / 'out' / 'MAIN_c0000000.bin'
         if image.exists():

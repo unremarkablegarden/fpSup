@@ -51,7 +51,7 @@ EXPECT = {'base': SHARED, 'gcsv': SHARED}
 # -- it is what makes a take land the right way up, and it goes missing quietly:
 # without it the card still boots, still logs, still writes both sidecars, and a
 # portrait take comes out rotated.
-EDITION_ROUTINES = {'base': (), 'gcsv': ('mode_hook',)}
+EDITION_ROUTINES = {'base': ('ltc',), 'gcsv': ('mode_hook',)}
 # What the archive is called.  Base is an edition of fpGyroSup, not a separate
 # product, so it is named like the rest of the family.
 STEM = {'base': 'fp-gyro-sup-base', 'gcsv': 'fp-gyro-sup'}

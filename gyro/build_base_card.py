@@ -54,6 +54,8 @@ sys.path.insert(0, str(HERE))
 from armasm import assemble, symbols                            # noqa: E402
 import imu_stream_deploy as S                                   # noqa: E402
 import ring_task_deploy as R                                    # noqa: E402
+sys.path.insert(0, str(HERE / 'ltc'))
+import build_ltc as L                                           # noqa: E402
 
 ENTRY_AT = 0xC072E064      # the bottom of the cave, above the loader
 PARK_AT = 0xC072EFB4       # the shell's park stub; nothing of ours may reach it
@@ -101,6 +103,23 @@ RECORD
     ignored) holds no clip and describes the HDMI monitor mode
     (3856x2170 @59.94).  gyroflow-batch-resolve sets size and frame rate
     from the clip either way.
+
+TIMECODE TO AN AUDIO RECORDER (LTC)
+    The fp's own timecode goes out as SMPTE LTC on HDMI audio channel 1,
+    for a recorder that reads LTC on an audio input (tested: Sound Devices
+    MixPre-6, Aux In).  Channel 2 keeps the fp microphone.
+
+        fp HDMI -> Ninja V -> Ninja headphone out -> recorder LTC input
+
+    Ninja: monitor the HDMI channel 1/2 pair on the headphones, volume
+    about 75 %.  MixPre-6: Advanced mode, Inputs > Aux In Mode = Timecode,
+    Timecode > TC Mode = Aux In.  The recorder follows the fp while the
+    cable is in, and keeps following after timecode resets or menu use.
+
+    24.00 fps only (not 23.98), Free Run timecode.  Other frame rates send
+    wrong LTC.
+    When the Ninja records its analog input, that goes to tracks 1-2 and
+    the HDMI audio (LTC on 3, fp mic on 4) moves to 3-4.
 
 CONVERT
     https://ijigen.github.io/fpSup/gyro/convert/     one take, in a browser
@@ -165,11 +184,15 @@ the card, or pull the battery, and the camera is exactly as it was.
 # header (twenty bytes, only what is needed to read them).  The .json is the
 # same file in the same format either way.
 EDITIONS = {
-    'base': ('gcsv_task.S', ('FPGYRO_EDITION_BASE=1',)),
+    'base': ('gcsv_task.S', ('FPGYRO_EDITION_BASE=1', *L.defines())),
     'gcsv': ('gcsv_task.S', ()),
     # Diagnostic: Base plus trace_diff.S.  Not a release edition.
-    'trace': ('gcsv_task.S', ('FPGYRO_EDITION_BASE=1', 'TRACE_DIFF=1')),
+    'trace': ('gcsv_task.S', ('FPGYRO_EDITION_BASE=1', 'TRACE_DIFF=1', *L.defines())),
 }
+# Editions that carry the LTC generator (ltc/).  WANT_LTC puts it in the blob
+# and has gsup_boot arm its site, so the site is journaled here too.  The USB
+# deploy (ring_task_deploy) builds without it.
+LTC_EDITIONS = {'base', 'trace'}
 BANNER = {'base': 'Base', 'gcsv': 'Gyro', 'trace': 'Trace'}
 READMES['trace'] = """fpGyroSup Trace {version} -- SIGMA fp firmware Ver.5.02 only
 
@@ -271,6 +294,8 @@ def hook_sites(edition='base'):
              in D.PRODUCERS.items()}
     if edition == 'trace':
         sites.update(TRACE_SITES)
+    if edition in LTC_EDITIONS:
+        sites['ltc'] = (L.SITE, L.SITE_STOCK)
     return [(site, struct.pack('<I', orig), f'hook site {name}')
             for name, (site, orig) in sorted(sites.items(), key=lambda kv: kv[1][0])]
 

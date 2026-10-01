@@ -930,3 +930,12 @@ gcsv_head2:
 #include "gcsv_rows.S"
 #include "gcsv_json.S"
 #include "gcsv_dist.S"
+
+#ifdef WANT_LTC
+/* The LTC generator, built by ltc/build_ltc.py: position independent, its
+ * state block inside it.  gsup_boot points a veneer at it (s_hook_b). */
+    .p2align 2
+    .global ltc
+ltc:
+    .incbin LTC_BLOB
+#endif

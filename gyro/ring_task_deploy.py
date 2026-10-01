@@ -154,7 +154,9 @@ GSUP_ROUTINES = ('writer_body', 'take_open', 'take_close', 'writer_post',
                  # HDMI record connection start / end (HdmiRecStart/Stop).
                  'hdmi_start', 'hdmi_stop',
                  # REC / shutter key-down with HDMI record output on.
-                 'key_split')
+                 'key_split',
+                 # LTC on HDMI audio (ltc/); Base card only, zero elsewhere.
+                 'ltc')
 
 
 def patch_offsets(code, syms):

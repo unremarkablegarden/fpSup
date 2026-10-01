@@ -69,6 +69,7 @@ gsup_offsets:
     .word   0       @ +0x40  hdmi_start
     .word   0       @ +0x44  hdmi_stop
     .word   0       @ +0x48  key_split
+    .word   0       @ +0x4C  ltc (WANT_LTC editions only)
 
 /* Shared state, reached through the pool pointer rather than pc-relatively.
  *
@@ -1306,6 +1307,17 @@ gsup_boot:
 #ifdef TRACE_DIFF
     bl      trace_arm
 #endif
+#ifdef WANT_LTC
+    /* LTC on HDMI audio ch1 (ltc/).  The site is the first word of the stock
+     * DspAudioDevice callback, a leaf, so it gets `b`, not `bl`: lr still holds
+     * the AUD_INT return address and the blob returns straight to it.  Patching
+     * the code rather than the callback pointer keeps it armed when the monitor
+     * restarts (menu close) and registers the callback again. */
+    ldr     r0, [r5, #76]               @ ltc
+    movw    r1, #:lower16:LTC_SITE
+    movt    r1, #:upper16:LTC_SITE
+    bl      s_hook_b
+#endif
 
     movw    ip, #:lower16:F_CACHE
     movt    ip, #:upper16:F_CACHE
@@ -1393,6 +1405,16 @@ gsup_boot:
  * after.  It touches no register and not lr, so the body returns to the
  * firmware with `bx lr` and the caller cannot tell there was a hop. */
 s_hook:
+    mov     r3, #0xEB000000             @ bl: the site is a call
+    b       s_hook_op
+
+/* s_hook_b -- as s_hook, but the site gets `b`.  For a site that is the first
+ * word of a leaf: lr still holds the caller's return address, the veneer does
+ * not touch it, and the body returns straight to the firmware's caller. */
+s_hook_b:
+    mov     r3, #0xEA000000
+
+s_hook_op:
     cmp     r0, #0
     bxeq    lr
     push    {r4, r5, r7, lr}            @ four: the stack stays 8-aligned
@@ -1421,7 +1443,7 @@ s_hook:
     sub     r1, r1, #8
     asr     r1, r1, #2
     bic     r1, r1, #0xFF000000
-    orr     r1, r1, #0xEB000000
+    orr     r1, r1, r3                  @ the opcode: bl or b
     str     r1, [r5]
 
 9:  pop     {r4, r5, r7, pc}
